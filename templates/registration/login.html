@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Вход — Drivee{% endblock %}
+{% block content %}
+  <h1>Войти</h1>
+  <form method="post">
+    {% csrf_token %}
+    <p>
+      <label>Email:</label><br>
+      <input type="text" name="username">
+    </p>
+    <p>
+      <label>Пароль:</label><br>
+      <input type="password" name="password">
+    </p>
+    <button type="submit">Войти</button>
+  </form>
+
+  {% if form.errors %}
+    <p style="color:red;">Неверный логин или пароль</p>
+  {% endif %}
+{% endblock %}

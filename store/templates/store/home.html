@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Главная — Drivee{% endblock %}
+
+{% block content %}
+  <h1>Интернет-магазин автотоваров Drivee</h1>
+  <p>Добро пожаловать! Перейдите в <a href="{% url 'catalog' %}">каталог</a>, чтобы посмотреть товары.</p>
+
+  <div style="margin-top:24px;">
+    <a class="btn" href="{% url 'catalog' %}">Перейти в каталог →</a>
+  </div>
+{% endblock %}

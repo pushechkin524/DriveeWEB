@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Избранное — Drivee{% endblock %}
+
+{% block content %}
+  <h1>Избранные товары</h1>
+
+  {% if favorites %}
+    <ul>
+      {% for fav in favorites %}
+        <li>
+          {{ fav.product.name }} — {{ fav.product.price }} ₽
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p>У вас пока нет избранных товаров.</p>
+  {% endif %}
+{% endblock %}

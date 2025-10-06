@@ -1,0 +1,6 @@
+body { margin:0; font-family: system-ui, -apple-system, Arial, sans-serif; }
+.nav { display:flex; justify-content:space-between; align-items:center; padding:12px 20px; border-bottom:1px solid #eee; }
+.nav a { margin-right:14px; text-decoration:none; color:#222; }
+.nav .logo { font-weight:700; margin-right:24px; }
+.container { max-width:1100px; margin:20px auto; padding:0 16px; }
+footer.footer { padding:20px; border-top:1px solid #eee; text-align:center; color:#666; margin-top:40px; }
