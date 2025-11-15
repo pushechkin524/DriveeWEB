@@ -2,26 +2,221 @@
 {% block title %}Каталог — Drivee{% endblock %}
 
 {% block content %}
-  <h1>Каталог товаров</h1>
+<style>
+  .catalog-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 24px;
+    padding: 30px 40px;
+    background-color: #f6f7fb;
+  }
 
-  {% if products %}
-    <table border="1" cellpadding="6" cellspacing="0">
-      <tr>
-        <th>Название</th>
-        <th>Бренд</th>
-        <th>Категория</th>
-        <th>Цена</th>
-      </tr>
-      {% for product in products %}
-      <tr>
-        <td>{{ product.name }}</td>
-        <td>{{ product.brand.name }}</td>
-        <td>{{ product.category.name }}</td>
-        <td>{{ product.price }} ₽</td>
-      </tr>
-      {% endfor %}
-    </table>
-  {% else %}
-    <p>Все товары съела бабайка👺</p>
-  {% endif %}
+  .product-card {
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transition: all 0.25s ease;
+  }
+
+  .product-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+  }
+
+  .product-link {
+    color: inherit;
+    text-decoration: none;
+    display: block;
+  }
+
+  .product-img {
+    width: 100%;
+    height: 200px;
+    border-top-left-radius: 16px;
+    border-top-right-radius: 16px;
+    background-color: #f9f9f9;
+    display: block;
+  }
+
+  .product-img--placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    color: #9ca3af;
+  }
+
+  .product-img--placeholder svg {
+    width: 64px;
+    height: 64px;
+    opacity: 0.6;
+  }
+
+  .product-info {
+    padding: 14px 16px;
+    flex-grow: 1;
+  }
+
+  .product-brand {
+    color: #777;
+    font-size: 13px;
+    margin-bottom: 4px;
+  }
+
+  .product-brand a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .product-brand a:hover {
+    color: #111;
+  }
+
+  .product-name {
+    font-weight: 500;
+    font-size: 15px;
+    color: #222;
+    margin-bottom: 12px;
+    line-height: 1.4em;
+  }
+
+  .product-price {
+    font-size: 17px;
+    font-weight: bold;
+    color: #000;
+    margin-bottom: 12px;
+  }
+
+  .product-stock {
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 10px;
+    color: #059669;
+  }
+
+  .product-stock.out {
+    color: #ef4444;
+  }
+
+  .product-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .product-form {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .product-form input[type="number"] {
+    width: 70px;
+  }
+
+  .product-btn[disabled] {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .product-form input {
+    width: 70px;
+    border-radius: 6px;
+    border: 1px solid #d1d5db;
+    padding: 6px 8px;
+  }
+
+  .product-btn {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    gap: 6px;
+    background-color: #2563eb;
+    color: #fff;
+    text-align: center;
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-weight: 500;
+    font-size: 15px;
+    text-decoration: none;
+    transition: background 0.2s ease;
+    border: none;
+    cursor: pointer;
+  }
+
+  .product-btn:hover {
+    background-color: #1d4ed8;
+  }
+
+  .product-btn--ghost {
+    background: #e5e7eb;
+    color: #1f2937;
+  }
+</style>
+
+<h1 style="text-align:center; margin-top:20px;">Каталог товаров</h1>
+{% if selected_subcategory %}
+  <p style="text-align:center; color:#6b7280;">Отображаются товары подкатегории «{{ selected_subcategory.name }}».</p>
+{% elif selected_main_category_label %}
+  <p style="text-align:center; color:#6b7280;">Отображаются товары раздела «{{ selected_main_category_label }}».</p>
+{% endif %}
+
+<div class="catalog-container">
+  {% for product in products %}
+  <div class="product-card">
+    <a href="{% url 'product_detail' product.id %}" class="product-link">
+      {% if product.image %}
+        <img src="{{ product.image.url }}" alt="{{ product.name }}" class="product-img" loading="lazy">
+      {% else %}
+        <div class="product-img product-img--placeholder">
+          <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="8" y="18" width="48" height="34" rx="4" stroke="currentColor" stroke-width="2"/>
+            <path d="M20 26L24 20H40L44 26" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <circle cx="32" cy="37" r="10" stroke="currentColor" stroke-width="2"/>
+            <circle cx="32" cy="37" r="4" fill="currentColor"/>
+          </svg>
+          <span>Нет фото</span>
+        </div>
+      {% endif %}
+
+      <div class="product-info">
+        {% if product.brand %}
+          <div class="product-brand"><a href="{% url 'brand_detail' product.brand_id %}">{{ product.brand.name }}</a></div>
+        {% endif %}
+        <div class="product-name">{{ product.name }}</div>
+        <div class="product-price">{{ product.price }} ₽</div>
+        <div class="product-stock {% if product.stock_quantity <= 0 %}out{% endif %}">
+          {% if product.stock_quantity > 0 %}
+            В наличии: {{ product.stock_quantity }} шт.
+          {% else %}
+            Нет в наличии
+          {% endif %}
+        </div>
+      </div>
+    </a>
+    <div class="product-actions" style="padding: 0 16px 16px;">
+      {% if user.is_authenticated %}
+        {% if product.stock_quantity > 0 %}
+          <form class="product-form" action="{% url 'add_to_cart' product.id %}" method="post">
+            {% csrf_token %}
+            <input type="number" name="quantity" min="1" max="{{ product.stock_quantity }}" value="1" aria-label="Количество">
+            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+            <button type="submit" class="product-btn">🛒 Добавить</button>
+          </form>
+        {% else %}
+          <button type="button" class="product-btn" disabled>Нет в наличии</button>
+        {% endif %}
+      {% else %}
+        <a href="{% url 'login' %}?next={% url 'catalog' %}" class="product-btn product-btn--ghost">Войдите, чтобы добавить</a>
+      {% endif %}
+    </div>
+  </div>
+  {% empty %}
+    <p>Нет товаров</p>
+  {% endfor %}
+</div>
 {% endblock %}

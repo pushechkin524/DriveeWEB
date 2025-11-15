@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block title %}Вход — Drivee{% endblock %}
+
+{% block content %}
+<style>
+  .login-container {
+    max-width: 400px;
+    margin: 60px auto;
+    background: #fff;
+    border-radius: 16px;
+    padding: 30px;
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+  }
+  .login-container h1 {
+    text-align: center;
+    margin-bottom: 25px;
+    color: #111;
+  }
+  .login-container form {
+    display: flex;
+    flex-direction: column;
+  }
+  .login-container label {
+    margin-top: 10px;
+    font-weight: 600;
+  }
+  .login-container input {
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    margin-top: 5px;
+  }
+  .login-container button {
+    margin-top: 20px;
+    background-color: #2563eb;
+    color: white;
+    border: none;
+    padding: 12px;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.3s;
+  }
+  .login-container button:hover {
+    background-color: #1e40af;
+  }
+  .register-link {
+    text-align: center;
+    margin-top: 15px;
+  }
+  .register-link a {
+    color: #2563eb;
+    text-decoration: none;
+    font-weight: 500;
+  }
+  .register-link a:hover {
+    text-decoration: underline;
+  }
+</style>
+
+<div class="login-container">
+  <h1>Вход</h1>
+  <form method="post">
+    {% csrf_token %}
+    {% if form.errors %}
+      <p style="color:red;">Неверный email или пароль</p>
+    {% endif %}
+    <label for="id_username">Email:</label>
+    <input type="text" name="username" id="id_username" required>
+
+    <label for="id_password">Пароль:</label>
+    <input type="password" name="password" id="id_password" required>
+
+    <button type="submit">Войти</button>
+  </form>
+
+  <div class="register-link">
+    <p>Нет аккаунта? <a href="#">Зарегистрироваться</a></p>
+  </div>
+</div>
+{% endblock %}

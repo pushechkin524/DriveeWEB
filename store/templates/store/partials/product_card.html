@@ -1,0 +1,47 @@
+<div class="product-card">
+  <a href="{% url 'product_detail' product.id %}" class="product-link">
+    {% if product.image %}
+      <img src="{{ product.image.url }}" alt="{{ product.name }}" class="product-img" loading="lazy">
+    {% else %}
+      <div class="product-img product-img--placeholder">
+        <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="8" y="18" width="48" height="34" rx="4" stroke="currentColor" stroke-width="2"/>
+          <path d="M20 26L24 20H40L44 26" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          <circle cx="32" cy="37" r="10" stroke="currentColor" stroke-width="2"/>
+          <circle cx="32" cy="37" r="4" fill="currentColor"/>
+        </svg>
+        <span>Нет фото</span>
+      </div>
+    {% endif %}
+    <div class="product-info">
+      {% if product.brand %}
+        <div class="product-brand"><a href="{% url 'brand_detail' product.brand_id %}">{{ product.brand.name }}</a></div>
+      {% endif %}
+      <div class="product-name">{{ product.name }}</div>
+      <div class="product-price">{{ product.price }} ₽</div>
+      <div class="product-stock {% if product.stock_quantity <= 0 %}out{% endif %}">
+        {% if product.stock_quantity > 0 %}
+          В наличии: {{ product.stock_quantity }} шт.
+        {% else %}
+          Нет в наличии
+        {% endif %}
+      </div>
+    </div>
+  </a>
+  <div class="product-actions" style="padding:0 16px 16px;">
+    {% if user.is_authenticated %}
+      {% if product.stock_quantity > 0 %}
+        <form class="product-form" action="{% url 'add_to_cart' product.id %}" method="post">
+          {% csrf_token %}
+          <input type="number" name="quantity" min="1" max="{{ product.stock_quantity }}" value="1" aria-label="Количество">
+          <input type="hidden" name="next" value="{% firstof request.get_full_path '/catalog/' %}">
+          <button type="submit" class="product-btn">🛒 Добавить</button>
+        </form>
+      {% else %}
+        <button type="button" class="product-btn" disabled>Нет в наличии</button>
+      {% endif %}
+    {% else %}
+      <a href="{% url 'login' %}?next={{ request.get_full_path }}" class="product-btn product-btn--ghost">Войдите, чтобы добавить</a>
+    {% endif %}
+  </div>
+</div>

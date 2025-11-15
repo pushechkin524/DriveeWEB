@@ -1,0 +1,186 @@
+{% extends "base.html" %}
+{% block title %}Корзина — Drivee{% endblock %}
+
+{% block content %}
+<style>
+  .cart-wrapper {
+    background: #fff;
+    padding: 32px;
+    border-radius: 20px;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.06);
+  }
+
+  .cart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 24px;
+  }
+
+  .cart-header h1 {
+    margin: 0;
+    font-size: 28px;
+  }
+
+  .cart-list {
+    display: grid;
+    gap: 16px;
+  }
+
+  .cart-item {
+    display: grid;
+    grid-template-columns: 1.4fr 0.9fr auto;
+    gap: 16px;
+    align-items: center;
+    padding: 18px 22px;
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    background: #f9fafb;
+  }
+
+  .cart-item h3 {
+    margin: 0;
+    font-size: 18px;
+  }
+
+  .cart-item .price {
+    font-weight: 600;
+    margin-top: 4px;
+  }
+
+  .cart-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+
+  .quantity-form input {
+    width: 70px;
+    padding: 6px 10px;
+    border-radius: 10px;
+    border: 1px solid #cbd5f5;
+    text-align: center;
+  }
+
+  .btn-secondary,
+  .btn-danger,
+  .btn-primary {
+    border: none;
+    border-radius: 10px;
+    padding: 8px 14px;
+    cursor: pointer;
+    font-weight: 600;
+  }
+
+  .btn-secondary {
+    background: #e0e7ff;
+    color: #1e3a8a;
+  }
+
+  .btn-danger {
+    background: #fee2e2;
+    color: #b91c1c;
+  }
+
+  .cart-summary {
+    margin-top: 32px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 20px;
+    border-top: 1px solid #e5e7eb;
+  }
+
+  .total-price {
+    font-size: 22px;
+    font-weight: 700;
+  }
+
+  .btn-primary {
+    background: #2563eb;
+    color: #fff;
+  }
+
+  .empty-cart {
+    text-align: center;
+    padding: 60px;
+    background: #fff;
+    border-radius: 20px;
+    border: 1px dashed #cbd5f5;
+  }
+
+  .empty-cart p {
+    font-size: 18px;
+    margin-bottom: 24px;
+  }
+
+  .stock-note {
+    margin-top: 6px;
+    font-size: 13px;
+    color: #059669;
+  }
+
+  .stock-note.out {
+    color: #ef4444;
+  }
+</style>
+
+{% if items %}
+  <div class="cart-wrapper">
+    <div class="cart-header">
+      <h1>Корзина</h1>
+      <p>{{ items|length }} позиций</p>
+    </div>
+
+    <div class="cart-list">
+      {% for item in items %}
+        <div class="cart-item">
+          <div>
+            <h3>{{ item.product.name }}</h3>
+            <div class="price">{{ item.product.price }} ₽ / шт.</div>
+            <div class="price">Сумма: {{ item.line_total }} ₽</div>
+            <div class="stock-note {% if item.product.stock_quantity <= 0 %}out{% endif %}">
+              {% if item.product.stock_quantity > 0 %}
+                В наличии: {{ item.product.stock_quantity }} шт.
+              {% else %}
+                Нет в наличии. Удалите товар.
+              {% endif %}
+            </div>
+          </div>
+
+          <form class="quantity-form" action="{% url 'update_cart_item' item.id %}" method="post">
+            {% csrf_token %}
+            <label for="quantity-{{ item.id }}" style="display:block; font-size:12px; color:#6b7280; margin-bottom:4px;">Количество</label>
+            <input
+              id="quantity-{{ item.id }}"
+              type="number"
+              min="1"
+              {% if item.product.stock_quantity > 0 %}max="{{ item.product.stock_quantity }}"{% endif %}
+              name="quantity"
+              value="{{ item.quantity }}"
+              {% if item.product.stock_quantity <= 0 %}disabled{% endif %}
+            >
+            <button type="submit" class="btn-secondary" style="margin-left:10px;" {% if item.product.stock_quantity <= 0 %}disabled{% endif %}>Обновить</button>
+          </form>
+
+          <form action="{% url 'remove_cart_item' item.id %}" method="post">
+            {% csrf_token %}
+            <button type="submit" class="btn-danger">Удалить</button>
+          </form>
+        </div>
+      {% endfor %}
+    </div>
+
+    <div class="cart-summary">
+      <div class="total-price">Итого: {{ total_cost }} ₽</div>
+      <a class="btn-primary" href="{% url 'checkout' %}" style="text-decoration:none; text-align:center;">Перейти к оформлению</a>
+    </div>
+  </div>
+{% else %}
+  <div class="empty-cart">
+    <h1>Корзина пустая</h1>
+    <p>Добавьте товары из каталога, чтобы оформить заказ.</p>
+    <a href="{% url 'catalog' %}" class="btn-primary" style="display:inline-block; text-decoration:none;">Перейти в каталог</a>
+  </div>
+{% endif %}
+{% endblock %}

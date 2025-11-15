@@ -1,0 +1,1470 @@
+{% extends "base.html" %}
+{% block title %}Панель администратора{% endblock %}
+
+{% block content %}
+<style>
+  body {
+    background: linear-gradient(145deg, #04050b, #0b1431 45%, #102046 100%);
+    color: #f8fafc;
+  }
+
+  .messages {
+    display: none !important;
+  }
+
+  .admin-toast-stack {
+    position: fixed;
+    top: 24px;
+    right: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    z-index: 1300;
+    opacity: 1;
+    transition: opacity 0.3s ease;
+  }
+
+  .admin-toast-stack.is-hidden {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .admin-toast {
+    min-width: 260px;
+    max-width: 360px;
+    padding: 14px 18px;
+    border-radius: 14px;
+    font-weight: 600;
+    color: #0f172a;
+    background: #f8fafc;
+    box-shadow: 0 18px 35px rgba(2, 6, 23, 0.45);
+    border: 1px solid rgba(248, 250, 252, 0.25);
+  }
+
+  .admin-toast--success {
+    border-color: rgba(34, 197, 94, 0.6);
+    background: rgba(22, 163, 74, 0.15);
+    color: #bbf7d0;
+  }
+
+  .admin-toast--info {
+    border-color: rgba(59, 130, 246, 0.6);
+    background: rgba(37, 99, 235, 0.15);
+    color: #bfdbfe;
+  }
+
+  .admin-toast--error {
+    border-color: rgba(239, 68, 68, 0.7);
+    background: rgba(220, 38, 38, 0.18);
+    color: #fecaca;
+  }
+
+  .admin-shell {
+    background: rgba(15, 23, 42, 0.78);
+    border-radius: 32px;
+    padding: 32px;
+    box-shadow: 0 40px 80px rgba(2, 6, 23, 0.55);
+  }
+
+  .admin-shell h1 {
+    margin-top: 0;
+    margin-bottom: 18px;
+  }
+
+  .admin-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 24px;
+    background: rgba(255, 255, 255, 0.04);
+    padding: 12px;
+    border-radius: 999px;
+  }
+
+  .admin-nav a {
+    padding: 10px 18px;
+    border-radius: 999px;
+    text-decoration: none;
+    font-weight: 600;
+    color: #cbd5f5;
+    transition: 0.2s;
+  }
+
+  .admin-nav a.active {
+    background: linear-gradient(135deg, #f97316, #fb7185);
+    color: #0f172a;
+  }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 18px;
+  }
+
+  .stat-card {
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 22px;
+    padding: 18px;
+  }
+
+  .stat-card span {
+    display: block;
+    font-size: 2.4rem;
+    font-weight: 700;
+    margin-top: 6px;
+  }
+
+  .panel {
+    background: rgba(12, 20, 35, 0.82);
+    border-radius: 24px;
+    padding: 24px;
+    margin-top: 26px;
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 14px;
+    margin-bottom: 16px;
+  }
+
+  .form-grid input,
+  .form-grid select,
+  .form-grid textarea {
+    width: 80%;
+    padding: 10px 12px;
+    border-radius: 14px;
+    border: 1px solid rgba(248, 250, 252, 0.18);
+    background: rgba(255, 255, 255, 0.05);
+    color: #f8fafc;
+  }
+
+  .product-form-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 18px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .product-form-grid > div {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .product-form-grid input,
+  .product-form-grid select,
+  .product-form-grid textarea {
+    width: 100% !important;
+    max-width: 100%;
+    padding: 12px 16px;
+    border-radius: 18px;
+    border: 1px solid rgba(148, 163, 184, 0.4);
+    background: rgba(13, 22, 41, 0.7);
+    color: #f8fafc;
+    font-weight: 500;
+    transition: border 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .product-form-grid input:focus,
+  .product-form-grid select:focus,
+  .product-form-grid textarea:focus {
+    border-color: #f97316;
+    box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.25);
+    outline: none;
+  }
+
+  .product-form-grid ::placeholder {
+    color: rgba(226, 232, 240, 0.6);
+    font-weight: 400;
+  }
+
+  .product-form-grid textarea {
+    min-height: 120px;
+    resize: vertical;
+  }
+
+  .product-form-grid select[multiple] {
+    min-height: 180px;
+  }
+
+  .spec-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+  }
+
+  .form-hint {
+    font-size: 0.75rem;
+    color: rgba(148, 163, 184, 0.8);
+  }
+
+  .product-table th {
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .form-grid.form-grid--compact input,
+  .form-grid.form-grid--compact select {
+    width: 220px;
+    max-width: 220px;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    border-radius: 18px;
+    overflow: hidden;
+  }
+
+  th, td {
+    padding: 12px;
+    border-bottom: 1px solid rgba(248, 250, 252, 0.08);
+    text-align: left;
+  }
+
+  th {
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 1px;
+    color: rgba(248, 250, 252, 0.65);
+  }
+
+  tr:last-child td {
+    border-bottom: none;
+  }
+
+  .table-input,
+  .table-select,
+  .table-textarea {
+    width: 100%;
+    padding: 8px 10px;
+    border-radius: 12px;
+    border: 1px solid rgba(248, 250, 252, 0.12);
+    background: rgba(248, 250, 252, 0.06);
+    color: #f8fafc;
+  }
+
+  .table-textarea {
+    min-height: 40px;
+    resize: vertical;
+  }
+
+  .brand-logo {
+    width: 64px;
+    height: 64px;
+    border-radius: 16px;
+    object-fit: cover;
+    background: rgba(15, 23, 42, 0.4);
+  }
+
+  .brand-description {
+    max-width: 420px;
+    color: rgba(248, 250, 252, 0.8);
+    font-size: 0.9rem;
+  }
+
+  .subnav {
+    display: inline-flex;
+    gap: 12px;
+    padding: 8px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.05);
+    margin-bottom: 18px;
+  }
+
+  .subnav a {
+    padding: 8px 18px;
+    border-radius: 999px;
+    text-decoration: none;
+    font-weight: 600;
+    color: rgba(226, 232, 240, 0.8);
+  }
+
+  .subnav a.active {
+    background: linear-gradient(135deg, #f97316, #a855f7);
+    color: #0f172a;
+  }
+
+  .btn {
+    border: none;
+    border-radius: 14px;
+    padding: 10px 16px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: transform 0.2s ease;
+  }
+
+  .btn-primary {
+    background: linear-gradient(120deg, #2563eb, #9333ea);
+    color: #fff;
+  }
+
+  .btn-danger {
+    background: linear-gradient(120deg, #dc2626, #f97316);
+    color: #fff;
+  }
+
+  .btn-success {
+    background: linear-gradient(120deg, #22c55e, #16a34a);
+    color: #fff;
+  }
+
+  .btn-warning {
+    background: linear-gradient(120deg, #f97316, #dc2626);
+    color: #fff;
+  }
+
+  .btn:hover {
+    transform: translateY(-2px);
+  }
+
+  .order-alert {
+    position: fixed;
+    top: 24px;
+    right: 24px;
+    min-width: 260px;
+    padding: 14px 20px;
+    border-radius: 14px;
+    background: rgba(15, 23, 42, 0.92);
+    color: #f8fafc;
+    font-size: 14px;
+    font-weight: 600;
+    box-shadow: 0 18px 35px rgba(2, 6, 23, 0.45);
+    opacity: 0;
+    transform: translateY(-10px);
+    pointer-events: none;
+    z-index: 1200;
+    transition: opacity 0.25s ease, transform 0.25s ease;
+  }
+
+  .order-alert.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .order-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .order-status-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 16px;
+    margin: 14px 0 24px;
+  }
+
+  .order-status-card {
+    padding: 16px 18px;
+    border-radius: 18px;
+    background: rgba(15, 23, 42, 0.75);
+    border: 1px solid rgba(148, 163, 184, 0.4);
+    box-shadow: inset 0 1px 0 rgba(248, 250, 252, 0.08);
+  }
+
+  .order-status-card span {
+    display: block;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: rgba(241, 245, 249, 0.8);
+  }
+
+  .order-status-card strong {
+    display: block;
+    margin-top: 6px;
+    font-size: 1.8rem;
+  }
+
+  .order-status-card--new {
+    border-color: rgba(59, 130, 246, 0.55);
+    background: rgba(37, 99, 235, 0.12);
+  }
+
+  .order-status-card--confirmed {
+    border-color: rgba(34, 197, 94, 0.55);
+    background: rgba(22, 163, 74, 0.12);
+  }
+
+  .order-status-card--declined {
+    border-color: rgba(248, 113, 113, 0.55);
+    background: rgba(185, 28, 28, 0.15);
+  }
+
+  .sales-summary {
+    margin-top: 20px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+  }
+
+  .sales-card {
+    padding: 16px;
+    border-radius: 18px;
+    background: rgba(15, 23, 42, 0.85);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+  }
+
+  .sales-card span {
+    display: block;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: rgba(226, 232, 240, 0.7);
+  }
+
+  .sales-card strong {
+    display: block;
+    margin-top: 8px;
+    font-size: 2rem;
+  }
+
+  .analytics-panel {
+    margin-top: 28px;
+  }
+
+  .analytics-tabs {
+    display: inline-flex;
+    gap: 8px;
+    border-radius: 999px;
+    padding: 4px;
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    margin-bottom: 18px;
+  }
+
+  .analytics-tabs a {
+    padding: 8px 18px;
+    border-radius: 999px;
+    color: rgba(226, 232, 240, 0.75);
+    text-decoration: none;
+    font-weight: 600;
+  }
+
+  .analytics-tabs a.active {
+    background: linear-gradient(120deg, #3b82f6, #8b5cf6);
+    box-shadow: 0 10px 25px rgba(59, 130, 246, 0.35);
+    color: #0f172a;
+  }
+
+  .analytics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+  }
+
+  .analytics-board {
+    padding: 18px;
+    border-radius: 22px;
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(59, 130, 246, 0.25);
+  }
+
+  .analytics-board h3 {
+    margin: 0 0 16px;
+    font-size: 1.1rem;
+  }
+
+  .analytics-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .analytics-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .analytics-label {
+    width: 64px;
+    font-weight: 600;
+    color: rgba(241, 245, 249, 0.85);
+  }
+
+  .analytics-bar {
+    flex: 1;
+    height: 12px;
+    border-radius: 999px;
+    background: rgba(51, 65, 85, 0.6);
+    overflow: hidden;
+    position: relative;
+  }
+
+  .analytics-bar span {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(90deg, #38bdf8, #6366f1);
+    transform-origin: left;
+  }
+
+  .analytics-count {
+    width: 48px;
+    text-align: right;
+    font-weight: 700;
+  }
+
+  .order-card {
+    border-radius: 22px;
+    padding: 22px;
+    border: 1px solid rgba(59, 130, 246, 0.25);
+    background: radial-gradient(circle at top right, rgba(59, 130, 246, 0.12), transparent 45%) rgba(8, 12, 24, 0.92);
+    box-shadow: 0 25px 50px rgba(2, 6, 23, 0.45);
+  }
+
+  .order-card--new {
+    animation: cardPop 0.6s ease;
+    border-color: rgba(248, 113, 113, 0.6);
+  }
+
+  @keyframes cardPop {
+    from {
+      transform: translateY(-10px);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+
+  .order-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+
+  .order-date {
+    font-size: 0.85rem;
+    color: rgba(226, 232, 240, 0.7);
+  }
+
+  .order-status {
+    padding: 6px 14px;
+    border-radius: 999px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .order-status.new {
+    background: rgba(99, 102, 241, 0.2);
+    color: #c7d2fe;
+  }
+
+  .order-status.confirmed {
+    background: rgba(34, 197, 94, 0.2);
+    color: #bbf7d0;
+  }
+
+  .order-status.declined {
+    background: rgba(248, 113, 113, 0.25);
+    color: #fecaca;
+  }
+
+  .order-items {
+    margin: 16px 0;
+    padding: 12px;
+    border-radius: 16px;
+    border: 1px solid rgba(148, 163, 184, 0.15);
+    background: rgba(15, 23, 42, 0.6);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .order-item {
+    display: flex;
+    justify-content: space-between;
+    color: rgba(226, 232, 240, 0.85);
+    font-size: 0.95rem;
+  }
+
+  .order-note textarea {
+    min-height: 70px;
+    border-radius: 16px;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    background: rgba(8, 15, 28, 0.85);
+    color: #f8fafc;
+  }
+
+  .order-footer {
+    margin-top: 18px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .order-total {
+    font-weight: 600;
+  }
+
+  .orders-empty {
+    padding: 18px;
+    border-radius: 16px;
+    border: 1px dashed rgba(148, 163, 184, 0.4);
+    text-align: center;
+    color: rgba(226, 232, 240, 0.8);
+  }
+  .order-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .order-card {
+    border-radius: 22px;
+    padding: 22px;
+    border: 1px solid rgba(59, 130, 246, 0.25);
+    background: radial-gradient(circle at top right, rgba(59, 130, 246, 0.12), transparent 45%) rgba(8, 12, 24, 0.92);
+    box-shadow: 0 25px 50px rgba(2, 6, 23, 0.45);
+  }
+
+  .order-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+
+  .order-date {
+    font-size: 0.85rem;
+    color: rgba(226, 232, 240, 0.7);
+  }
+
+  .order-status {
+    padding: 6px 14px;
+    border-radius: 999px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .order-status.new {
+    background: rgba(99, 102, 241, 0.2);
+    color: #c7d2fe;
+  }
+
+  .order-status.confirmed {
+    background: rgba(34, 197, 94, 0.2);
+    color: #bbf7d0;
+  }
+
+  .order-status.declined {
+    background: rgba(248, 113, 113, 0.25);
+    color: #fecaca;
+  }
+
+  .order-items {
+    margin: 16px 0;
+    padding: 12px;
+    border-radius: 16px;
+    border: 1px solid rgba(148, 163, 184, 0.15);
+    background: rgba(15, 23, 42, 0.6);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .order-item {
+    display: flex;
+    justify-content: space-between;
+    color: rgba(226, 232, 240, 0.85);
+    font-size: 0.95rem;
+  }
+
+  .order-note textarea {
+    min-height: 70px;
+    border-radius: 16px;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    background: rgba(8, 15, 28, 0.85);
+    color: #f8fafc;
+  }
+
+  .order-footer {
+    margin-top: 18px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .order-total {
+    font-weight: 600;
+  }
+</style>
+
+{% if messages %}
+  <div class="admin-toast-stack">
+    {% for message in messages %}
+      {% with message.level_tag|default:"info" as tag %}
+        <div class="admin-toast admin-toast--{{ tag }}">{{ message }}</div>
+      {% endwith %}
+    {% endfor %}
+  </div>
+  <script>
+    (function () {
+      const stack = document.querySelector(".admin-toast-stack");
+      if (!stack) return;
+      setTimeout(() => {
+        stack.classList.add("is-hidden");
+        setTimeout(() => stack.remove(), 600);
+      }, 300000);
+    })();
+  </script>
+{% endif %}
+
+<div class="admin-shell">
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;">
+    <h1>Панель администратора</h1>
+    <a href="{% url 'home' %}" class="btn btn-primary" style="text-decoration:none;">← На сайт</a>
+  </div>
+
+  <div class="admin-nav">
+    {% for key,label in nav_tabs %}
+      <a href="?section={{ key }}" class="{% if section == key %}active{% endif %}">{{ label }}</a>
+    {% endfor %}
+  </div>
+
+  {% if section == "overview" %}
+    <div class="stats-grid">
+      {% for key,value in stats.items %}
+        <div class="stat-card">
+          {{ key|capfirst }}
+          <span>{{ value }}</span>
+        </div>
+      {% endfor %}
+    </div>
+    {% if orders_period_counts %}
+      <div class="sales-summary">
+        <div class="sales-card">
+          <span>Продано сегодня</span>
+          <strong>{{ orders_period_counts.day|default:0 }}</strong>
+        </div>
+        <div class="sales-card">
+          <span>Продано в этом месяце</span>
+          <strong>{{ orders_period_counts.month|default:0 }}</strong>
+        </div>
+        <div class="sales-card">
+          <span>Продано в этом году</span>
+          <strong>{{ orders_period_counts.year|default:0 }}</strong>
+        </div>
+      </div>
+    {% endif %}
+    {% if orders_chart.data or users_chart.data %}
+      <div class="analytics-panel">
+        <div class="analytics-tabs">
+          {% for key,label in analytics_range_options %}
+            <a href="?section=overview&analytics_range={{ key }}" class="{% if analytics_range == key %}active{% endif %}">{{ label }}</a>
+          {% endfor %}
+        </div>
+        <div class="analytics-grid">
+          {% if orders_chart.data %}
+            <div class="analytics-board">
+              <h3>Заказы · {{ analytics_range_label }}</h3>
+              <div class="analytics-list">
+                {% for point in orders_chart.data %}
+                  <div class="analytics-item">
+                    <div class="analytics-label">{{ point.label }}</div>
+                    <div class="analytics-bar">
+                      <span style="width: {{ point.percent }}%;"></span>
+                    </div>
+                    <div class="analytics-count">{{ point.count }}</div>
+                  </div>
+                {% endfor %}
+              </div>
+            </div>
+          {% endif %}
+          {% if users_chart.data %}
+            <div class="analytics-board">
+              <h3>Новые аккаунты · {{ analytics_range_label }}</h3>
+              <div class="analytics-list">
+                {% for point in users_chart.data %}
+                  <div class="analytics-item">
+                    <div class="analytics-label">{{ point.label }}</div>
+                    <div class="analytics-bar">
+                      <span style="width: {{ point.percent }}%;"></span>
+                    </div>
+                    <div class="analytics-count">{{ point.count }}</div>
+                  </div>
+                {% endfor %}
+              </div>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    {% endif %}
+
+  {% elif section == "categories" %}
+    <div class="panel">
+      <div class="subnav">
+        <a href="?section=categories&cat_tab=groups" class="{% if cat_tab == 'groups' %}active{% endif %}">Группы подкатегорий</a>
+        <a href="?section=categories&cat_tab=subcategories" class="{% if cat_tab == 'subcategories' %}active{% endif %}">Подкатегории</a>
+      </div>
+
+      {% if cat_tab == "subcategories" %}
+        <h2>Подкатегории</h2>
+        <form method="post" class="form-grid form-grid--compact">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="create">
+          <input type="hidden" name="section" value="categories">
+          <input type="hidden" name="cat_tab" value="subcategories">
+          {{ category_form.as_p }}
+          <button class="btn btn-primary">Добавить подкатегорию</button>
+        </form>
+
+        <table>
+          <thead><tr><th>Название</th><th>Раздел</th><th>Группа</th><th></th></tr></thead>
+          <tbody>
+            {% for category in categories %}
+              <tr>
+                <td>{{ category.name }}</td>
+                <td>{{ category.get_main_category_display }}</td>
+                <td>{{ category.group }}</td>
+                <td>
+                  <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="delete">
+                    <input type="hidden" name="section" value="categories">
+                    <input type="hidden" name="cat_tab" value="subcategories">
+                    <input type="hidden" name="object_id" value="{{ category.id }}">
+                    <button class="btn btn-danger" onclick="return confirm('Удалить?');">Удалить</button>
+                  </form>
+                </td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="4">Подкатегорий нет</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <h2>Группы подкатегорий</h2>
+        <form method="post" class="form-grid">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="create">
+          <input type="hidden" name="section" value="groups">
+          <input type="hidden" name="cat_tab" value="groups">
+          {{ group_form.as_p }}
+          <button class="btn btn-primary">Добавить группу</button>
+        </form>
+
+        <table>
+          <thead><tr><th>Название</th><th>Направление</th><th>Порядок</th><th></th></tr></thead>
+          <tbody>
+            {% for group in groups %}
+              <form id="group-update-{{ group.id }}" method="post">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="update">
+                <input type="hidden" name="section" value="groups">
+                <input type="hidden" name="cat_tab" value="groups">
+                <input type="hidden" name="object_id" value="{{ group.id }}">
+              </form>
+              <tr>
+                <td><input form="group-update-{{ group.id }}" name="name" class="table-input" value="{{ group.name }}"></td>
+                <td>
+                  <select form="group-update-{{ group.id }}" name="main_category" class="table-select">
+                    {% for value,label in main_category_choices %}
+                      <option value="{{ value }}" {% if group.main_category == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                  </select>
+                </td>
+                <td><input form="group-update-{{ group.id }}" name="order" class="table-input" type="number" value="{{ group.order }}"></td>
+                <td style="white-space:nowrap;">
+                  <button form="group-update-{{ group.id }}" class="btn btn-primary">Сохранить</button>
+                  <form method="post" style="display:inline;">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="delete">
+                    <input type="hidden" name="section" value="groups">
+                    <input type="hidden" name="cat_tab" value="groups">
+                    <input type="hidden" name="object_id" value="{{ group.id }}">
+                    <button class="btn btn-danger" onclick="return confirm('Удалить группу?');">Удалить</button>
+                  </form>
+                </td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="4">Группы не созданы</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% endif %}
+    </div>
+
+  {% elif section == "brands" %}
+    <div class="panel">
+      <h2>Добавить бренд</h2>
+      <form method="post" enctype="multipart/form-data" class="form-grid form-grid--compact">
+        {% csrf_token %}
+        <input type="hidden" name="section" value="brands">
+        <input type="hidden" name="action" value="create">
+        <div>
+          {{ brand_form.name.label_tag }}
+          {{ brand_form.name }}
+        </div>
+        <div>
+          {{ brand_form.image.label_tag }}
+          {{ brand_form.image }}
+        </div>
+        <div style="grid-column:1 / -1;">
+          {{ brand_form.description.label_tag }}
+          {{ brand_form.description }}
+        </div>
+        <button class="btn btn-primary" style="grid-column:1 / -1;max-width:220px;">Добавить бренд</button>
+      </form>
+    </div>
+
+    <div class="panel">
+      <h2>Список брендов</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Логотип</th>
+            <th>Бренд</th>
+            <th>Описание</th>
+            <th style="width:220px;"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for brand in brands %}
+            <tr>
+              <td>
+                {% if brand.image %}
+                  <img src="{{ brand.image.url }}" alt="{{ brand.name }}" class="brand-logo">
+                {% else %}
+                  <div class="brand-logo" style="display:flex;align-items:center;justify-content:center;color:#94a3b8;font-weight:600;">
+                    {{ brand.name|slice:":1"|default:"?" }}
+                  </div>
+                {% endif %}
+              </td>
+              <td style="font-weight:600;">{{ brand.name }}</td>
+              <td class="brand-description">{{ brand.description|default:"—" }}</td>
+              <td>
+                <form method="post" enctype="multipart/form-data" style="display:flex;flex-direction:column;gap:8px;">
+                  {% csrf_token %}
+                  <input type="hidden" name="section" value="brands">
+                  <input type="hidden" name="action" value="update">
+                  <input type="hidden" name="object_id" value="{{ brand.pk }}">
+                  <input type="text" name="name" value="{{ brand.name }}" class="table-input" placeholder="Название">
+                  <textarea name="description" class="table-textarea" placeholder="Описание">{{ brand.description }}</textarea>
+                  <input type="file" name="image">
+                  <button class="btn btn-primary" style="max-width:140px;">Сохранить</button>
+                </form>
+                <form method="post" style="margin-top:8px;">
+                  {% csrf_token %}
+                  <input type="hidden" name="section" value="brands">
+                  <input type="hidden" name="action" value="delete">
+                  <input type="hidden" name="object_id" value="{{ brand.pk }}">
+                  <button class="btn btn-danger" style="max-width:140px;">Удалить</button>
+                </form>
+              </td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="4">Бренды ещё не добавлены.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+  {% elif section == "products" %}
+    <div class="panel">
+      <div class="subnav">
+        <a href="?section=products&product_tab=auto_parts" class="{% if product_tab == 'auto_parts' %}active{% endif %}">Автозапчасти</a>
+        <a href="?section=products&product_tab=auto_goods" class="{% if product_tab == 'auto_goods' %}active{% endif %}">Автотовары</a>
+      </div>
+
+      {% if product_tab == "auto_goods" %}
+        <h2>Автотовары</h2>
+        <form method="post" enctype="multipart/form-data" class="product-form-grid">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="create">
+          <input type="hidden" name="section" value="products">
+          <input type="hidden" name="product_tab" value="auto_goods">
+
+          <div>
+            {{ auto_goods_form.name.label_tag }}
+            <span class="form-hint">Основное название товара</span>
+            {{ auto_goods_form.name }}
+            {{ auto_goods_form.name.errors }}
+          </div>
+          <div>
+            {{ auto_goods_form.price.label_tag }}
+            {{ auto_goods_form.price }}
+            {{ auto_goods_form.price.errors }}
+          </div>
+          <div>
+            {{ auto_goods_form.category.label_tag }}
+            {{ auto_goods_form.category }}
+            {{ auto_goods_form.category.errors }}
+          </div>
+          <div>
+            {{ auto_goods_form.brand.label_tag }}
+            {{ auto_goods_form.brand }}
+            {{ auto_goods_form.brand.errors }}
+          </div>
+          <div>
+            {{ auto_goods_form.stock_quantity.label_tag }}
+            {{ auto_goods_form.stock_quantity }}
+            {{ auto_goods_form.stock_quantity.errors }}
+          </div>
+          <div>
+            {{ auto_goods_form.image.label_tag }}
+            {{ auto_goods_form.image }}
+            {{ auto_goods_form.image.errors }}
+          </div>
+          <div style="grid-column:1 / -1;">
+            {{ auto_goods_form.compatible_cars.label_tag }}
+            {{ auto_goods_form.compatible_cars }}
+            {{ auto_goods_form.compatible_cars.errors }}
+          </div>
+          <div style="grid-column:1 / -1;">
+            {{ auto_goods_form.description.label_tag }}
+            {{ auto_goods_form.description }}
+            {{ auto_goods_form.description.errors }}
+          </div>
+
+          <div class="spec-grid" style="grid-column:1 / -1;">
+            <div>
+              {{ auto_goods_form.article_code.label_tag }}
+              {{ auto_goods_form.article_code }}
+              {{ auto_goods_form.article_code.errors }}
+            </div>
+            <div>
+              {{ auto_goods_form.volume_or_weight.label_tag }}
+              {{ auto_goods_form.volume_or_weight }}
+              {{ auto_goods_form.volume_or_weight.errors }}
+            </div>
+            <div>
+              {{ auto_goods_form.size.label_tag }}
+              {{ auto_goods_form.size }}
+              {{ auto_goods_form.size.errors }}
+            </div>
+            <div>
+              {{ auto_goods_form.material.label_tag }}
+              {{ auto_goods_form.material }}
+              {{ auto_goods_form.material.errors }}
+            </div>
+            <div>
+              {{ auto_goods_form.color.label_tag }}
+              {{ auto_goods_form.color }}
+              {{ auto_goods_form.color.errors }}
+            </div>
+            <div>
+              {{ auto_goods_form.compatibility.label_tag }}
+              {{ auto_goods_form.compatibility }}
+              {{ auto_goods_form.compatibility.errors }}
+            </div>
+            <div>
+              {{ auto_goods_form.temperature_range.label_tag }}
+              {{ auto_goods_form.temperature_range }}
+              {{ auto_goods_form.temperature_range.errors }}
+            </div>
+            <div>
+              {{ auto_goods_form.country_of_origin.label_tag }}
+              {{ auto_goods_form.country_of_origin }}
+              {{ auto_goods_form.country_of_origin.errors }}
+            </div>
+            <div>
+              {{ auto_goods_form.warranty.label_tag }}
+              {{ auto_goods_form.warranty }}
+              {{ auto_goods_form.warranty.errors }}
+            </div>
+            <div>
+              {{ auto_goods_form.package_contents.label_tag }}
+              {{ auto_goods_form.package_contents }}
+              {{ auto_goods_form.package_contents.errors }}
+            </div>
+          </div>
+
+          <button class="btn btn-primary" style="grid-column:1 / -1;max-width:240px;">Добавить автотовар</button>
+        </form>
+      {% else %}
+        <h2>Автозапчасти</h2>
+        <form method="post" enctype="multipart/form-data" class="product-form-grid">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="create">
+          <input type="hidden" name="section" value="products">
+          <input type="hidden" name="product_tab" value="auto_parts">
+
+          <div>
+            {{ auto_part_form.name.label_tag }}
+            <span class="form-hint">Пример: Тормозной диск</span>
+            {{ auto_part_form.name }}
+            {{ auto_part_form.name.errors }}
+          </div>
+          <div>
+            {{ auto_part_form.price.label_tag }}
+            {{ auto_part_form.price }}
+            {{ auto_part_form.price.errors }}
+          </div>
+          <div>
+            {{ auto_part_form.category.label_tag }}
+            {{ auto_part_form.category }}
+            {{ auto_part_form.category.errors }}
+          </div>
+          <div>
+            {{ auto_part_form.brand.label_tag }}
+            <span class="form-hint">Например: Bosch</span>
+            {{ auto_part_form.brand }}
+            {{ auto_part_form.brand.errors }}
+          </div>
+          <div>
+            {{ auto_part_form.stock_quantity.label_tag }}
+            {{ auto_part_form.stock_quantity }}
+            {{ auto_part_form.stock_quantity.errors }}
+          </div>
+          <div>
+            {{ auto_part_form.image.label_tag }}
+            {{ auto_part_form.image }}
+            {{ auto_part_form.image.errors }}
+          </div>
+          <div style="grid-column:1 / -1;">
+            {{ auto_part_form.compatible_cars.label_tag }}
+            {{ auto_part_form.compatible_cars }}
+            {{ auto_part_form.compatible_cars.errors }}
+          </div>
+          <div style="grid-column:1 / -1;">
+            {{ auto_part_form.description.label_tag }}
+            {{ auto_part_form.description }}
+            {{ auto_part_form.description.errors }}
+          </div>
+
+          <div class="spec-grid" style="grid-column:1 / -1;">
+            <div>
+              {{ auto_part_form.oem_number.label_tag }}
+              {{ auto_part_form.oem_number }}
+              {{ auto_part_form.oem_number.errors }}
+            </div>
+            <div>
+              {{ auto_part_form.manufacturer_article.label_tag }}
+              {{ auto_part_form.manufacturer_article }}
+              {{ auto_part_form.manufacturer_article.errors }}
+            </div>
+            <div>
+              {{ auto_part_form.compatibility.label_tag }}
+              {{ auto_part_form.compatibility }}
+              {{ auto_part_form.compatibility.errors }}
+            </div>
+            <div>
+              {{ auto_part_form.installation_side.label_tag }}
+              {{ auto_part_form.installation_side }}
+              {{ auto_part_form.installation_side.errors }}
+            </div>
+            <div>
+              {{ auto_part_form.material.label_tag }}
+              {{ auto_part_form.material }}
+              {{ auto_part_form.material.errors }}
+            </div>
+            <div>
+              {{ auto_part_form.weight_kg.label_tag }}
+              {{ auto_part_form.weight_kg }}
+              {{ auto_part_form.weight_kg.errors }}
+            </div>
+            <div>
+              {{ auto_part_form.dimensions.label_tag }}
+              {{ auto_part_form.dimensions }}
+              {{ auto_part_form.dimensions.errors }}
+            </div>
+            <div>
+              {{ auto_part_form.country_of_origin.label_tag }}
+              {{ auto_part_form.country_of_origin }}
+              {{ auto_part_form.country_of_origin.errors }}
+            </div>
+            <div>
+              {{ auto_part_form.warranty.label_tag }}
+              {{ auto_part_form.warranty }}
+              {{ auto_part_form.warranty.errors }}
+            </div>
+            <div>
+              {{ auto_part_form.certificates.label_tag }}
+              {{ auto_part_form.certificates }}
+              {{ auto_part_form.certificates.errors }}
+            </div>
+          </div>
+
+          <button class="btn btn-primary" style="grid-column:1 / -1;max-width:240px;">Добавить автозапчасть</button>
+        </form>
+      {% endif %}
+    </div>
+
+    <div class="panel">
+      {% if product_tab == "auto_goods" %}
+        <h2>Список автотоваров</h2>
+        <table class="product-table">
+          <thead><tr><th>Название</th><th>Категория</th><th>Бренд</th><th>Цена</th><th>Остаток</th><th></th></tr></thead>
+          <tbody>
+            {% for product in auto_goods %}
+              <tr>
+                <td>{{ product.name }}</td>
+                <td>{{ product.category }}</td>
+                <td>{{ product.brand|default:"—" }}</td>
+                <td>{{ product.price }} ₽</td>
+                <td>{{ product.stock_quantity }}</td>
+                <td>
+                  <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="delete">
+                    <input type="hidden" name="section" value="products">
+                    <input type="hidden" name="product_tab" value="auto_goods">
+                    <input type="hidden" name="object_id" value="{{ product.id }}">
+                    <button class="btn btn-danger" onclick="return confirm('Удалить товар?');">Удалить</button>
+                  </form>
+                </td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="6">Автотовары не добавлены.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <h2>Список автозапчастей</h2>
+        <table class="product-table">
+          <thead><tr><th>Название</th><th>Категория</th><th>Бренд</th><th>Цена</th><th>Остаток</th><th></th></tr></thead>
+          <tbody>
+            {% for product in auto_parts %}
+              <tr>
+                <td>{{ product.name }}</td>
+                <td>{{ product.category }}</td>
+                <td>{{ product.brand|default:"—" }}</td>
+                <td>{{ product.price }} ₽</td>
+                <td>{{ product.stock_quantity }}</td>
+                <td>
+                  <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="delete">
+                    <input type="hidden" name="section" value="products">
+                    <input type="hidden" name="product_tab" value="auto_parts">
+                    <input type="hidden" name="object_id" value="{{ product.id }}">
+                    <button class="btn btn-danger" onclick="return confirm('Удалить товар?');">Удалить</button>
+                  </form>
+                </td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="6">Автозапчасти не добавлены.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% endif %}
+    </div>
+
+  {% elif section == "orders" %}
+    <div class="panel">
+      <h2>Заказы</h2>
+      <div class="order-status-stats">
+        <div class="order-status-card order-status-card--new">
+          <span>Новые</span>
+          <strong>{{ order_status_stats.new|default:0 }}</strong>
+        </div>
+        <div class="order-status-card order-status-card--confirmed">
+          <span>Подтверждены</span>
+          <strong>{{ order_status_stats.confirmed|default:0 }}</strong>
+        </div>
+        <div class="order-status-card order-status-card--declined">
+          <span>Отменены</span>
+          <strong>{{ order_status_stats.declined|default:0 }}</strong>
+        </div>
+      </div>
+      <div id="order-alert" class="order-alert" role="alert" aria-live="polite" hidden data-order-alert-message>Новый заказ</div>
+      <div id="orders-container" class="order-grid" data-last-id="{{ orders.0.id|default:0 }}">
+        {% include "dashboard/partials/order_cards.html" with orders=orders show_empty=True highlight_new=False %}
+      </div>
+    </div>
+    <script>
+      (function () {
+        const container = document.getElementById("orders-container");
+        if (!container) return;
+        const alertBox = document.getElementById("order-alert");
+        const alertMessage = alertBox || null;
+        let lastId = parseInt(container.dataset.lastId || "0", 10);
+        const pollUrl = "{% url 'dashboard:orders_feed' %}";
+
+        function showAlert(message) {
+          if (!alertBox) return;
+          const text = message || "Новый заказ";
+          if (alertMessage) {
+            alertMessage.textContent = text;
+          }
+          alertBox.hidden = false;
+          alertBox.classList.add("visible");
+          setTimeout(() => {
+            alertBox.classList.remove("visible");
+            alertBox.hidden = true;
+          }, 10000);
+        }
+
+        function clearHighlights() {
+          container.querySelectorAll(".order-card--new").forEach((card) => {
+            card.classList.remove("order-card--new");
+          });
+        }
+
+        async function poll() {
+          try {
+            const response = await fetch(`${pollUrl}?last_id=${lastId}`, {
+              headers: { "X-Requested-With": "XMLHttpRequest" },
+            });
+            if (!response.ok) return;
+            const data = await response.json();
+            if (data.has_new && data.html) {
+              container.insertAdjacentHTML("afterbegin", data.html);
+              lastId = data.last_id || lastId;
+              container.dataset.lastId = lastId;
+              showAlert(data.message || `Новый заказ #${lastId}`);
+              setTimeout(clearHighlights, 4000);
+            }
+          } catch (error) {
+            console.error("orders poll error", error);
+          }
+        }
+
+        setInterval(poll, 8000);
+      })();
+    </script>
+
+  {% elif section == "users" %}
+    <div class="panel">
+      <h2>Пользователи</h2>
+      <form method="post" class="form-grid">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="create">
+        <input type="hidden" name="section" value="users">
+        {{ user_form.as_p }}
+        <button class="btn btn-primary">Создать пользователя</button>
+      </form>
+
+      <table>
+        <thead><tr><th>Email</th><th>Имя</th><th>Роль</th><th>Статус</th><th></th></tr></thead>
+        <tbody>
+          {% for user in users %}
+            <tr>
+              <td>{{ user.email }}</td>
+              <td>{{ user.full_name }}</td>
+              <td>{{ user.role }}</td>
+              <td>{% if user.is_staff %}Админ{% else %}Пользователь{% endif %}</td>
+              <td>
+                <form method="post">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="delete">
+                  <input type="hidden" name="section" value="users">
+                  <input type="hidden" name="object_id" value="{{ user.pk }}">
+                  <button class="btn btn-danger" onclick="return confirm('Удалить пользователя?');">Удалить</button>
+                </form>
+              </td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="5">Пользователей нет</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+  {% elif section == "pickups" %}
+    <div class="panel">
+      <h2>Пункты выдачи</h2>
+      <form method="post" class="form-grid">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="create">
+        <input type="hidden" name="section" value="pickups">
+        {{ pickup_form.as_p }}
+        <button class="btn btn-primary">Создать ПВЗ</button>
+      </form>
+
+      <table>
+        <thead><tr><th>Название</th><th>Адрес</th><th>Активен</th><th></th></tr></thead>
+        <tbody>
+          {% for pvz in pickup_points %}
+            <tr>
+              <td>{{ pvz.name }}</td>
+              <td>{{ pvz.address }}</td>
+              <td>{{ pvz.is_active|yesno:"Да,Нет" }}</td>
+              <td>
+                <form method="post">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="delete">
+                  <input type="hidden" name="section" value="pickups">
+                  <input type="hidden" name="object_id" value="{{ pvz.id }}">
+                  <button class="btn btn-danger" onclick="return confirm('Удалить ПВЗ?');">Удалить</button>
+                </form>
+              </td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="4">ПВЗ не добавлены</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+  {% elif section == "cars" %}
+    <div class="panel">
+      <h2>Автомобили</h2>
+      <form method="post" class="form-grid form-grid--compact">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="create">
+        <input type="hidden" name="section" value="cars">
+        <div>
+          {{ car_form.make.label_tag }}
+          {{ car_form.make }}
+        </div>
+        <div>
+          {{ car_form.model.label_tag }}
+          {{ car_form.model }}
+        </div>
+        <div>
+          {{ car_form.generation.label_tag }}
+          {{ car_form.generation }}
+        </div>
+        <button class="btn btn-primary" style="grid-column:1 / -1;max-width:220px;">Добавить автомобиль</button>
+      </form>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Марка</th>
+            <th>Модель</th>
+            <th>Поколение</th>
+            <th style="width:200px;"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for car in cars %}
+            <tr>
+              <td>
+                <form id="car-update-{{ car.pk }}" method="post">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="update">
+                  <input type="hidden" name="section" value="cars">
+                  <input type="hidden" name="object_id" value="{{ car.pk }}">
+                  <input class="table-input" name="make" value="{{ car.make }}">
+                </form>
+              </td>
+              <td><input form="car-update-{{ car.pk }}" class="table-input" name="model" value="{{ car.model }}"></td>
+              <td><input form="car-update-{{ car.pk }}" class="table-input" name="generation" value="{{ car.generation }}"></td>
+              <td style="white-space:nowrap;">
+                <button form="car-update-{{ car.pk }}" class="btn btn-primary">Сохранить</button>
+                <form method="post" style="display:inline;">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="delete">
+                  <input type="hidden" name="section" value="cars">
+                  <input type="hidden" name="object_id" value="{{ car.pk }}">
+                  <button class="btn btn-danger" onclick="return confirm('Удалить автомобиль?');">Удалить</button>
+                </form>
+              </td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="4">Автомобилей пока нет</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

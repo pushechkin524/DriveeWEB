@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Категории — Drivee{% endblock %}
+
+{% block content %}
+<style>
+  .categories-hero {
+    background: radial-gradient(circle at top right, #111827, #0f172a);
+    color: #fff;
+    border-radius: 24px;
+    padding: 40px 50px;
+    margin-bottom: 40px;
+    box-shadow: 0 20px 50px rgba(15, 23, 42, 0.3);
+  }
+
+  .categories-hero h1 {
+    margin: 0;
+    font-size: 2.2rem;
+  }
+
+  .categories-hero p {
+    color: rgba(255, 255, 255, 0.7);
+    margin-top: 12px;
+    max-width: 640px;
+  }
+
+  .categories-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 20px;
+  }
+
+  .category-card {
+    background: #fff;
+    border-radius: 20px;
+    box-shadow: 0 10px 25px rgba(15, 23, 42, 0.08);
+    padding: 20px;
+    text-decoration: none;
+    color: inherit;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+    min-height: 220px;
+  }
+
+  .category-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 15px 30px rgba(15, 23, 42, 0.12);
+  }
+
+  .category-card-icon {
+    font-size: 28px;
+    margin-bottom: 10px;
+  }
+
+  .category-card h3 {
+    margin: 0;
+    font-size: 1.1rem;
+  }
+
+  .category-card p {
+    color: #6b7280;
+    font-size: 0.95rem;
+    margin-top: 6px;
+  }
+
+  .category-card img {
+    position: absolute;
+    bottom: -10px;
+    right: -10px;
+    width: 120px;
+    height: 120px;
+    opacity: 0.2;
+    object-fit: cover;
+    pointer-events: none;
+  }
+</style>
+
+<div class="categories-hero">
+  <h1>Выберите главное направление</h1>
+  <p>От шин до электроники — собрали ключевые категории, чтобы вы быстрее нашли нужные товары. Выберите раздел и изучите подкатегории.</p>
+</div>
+
+<div class="categories-grid">
+  {% for category in main_categories %}
+    <a href="{% url 'category_detail' category.key %}" class="category-card">
+      <div class="category-card-icon">{{ category.icon }}</div>
+      <h3>{{ category.title }}</h3>
+      <p>{{ category.description }}</p>
+      <img src="{% static category.image %}" alt="{{ category.title }}">
+    </a>
+  {% endfor %}
+</div>
+{% endblock %}

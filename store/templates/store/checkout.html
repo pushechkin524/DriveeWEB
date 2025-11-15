@@ -1,0 +1,448 @@
+{% extends "base.html" %}
+{% block title %}Оформление заказа — Drivee{% endblock %}
+
+{% block content %}
+<style>
+  .checkout-grid {
+    display: grid;
+    grid-template-columns: 1.1fr 1fr;
+    gap: 28px;
+  }
+
+  .panel {
+    background: #fff;
+    border-radius: 20px;
+    padding: 24px;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
+  }
+
+  .panel h2 {
+    margin-top: 0;
+    margin-bottom: 16px;
+  }
+
+  .order-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 14px 0;
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  .order-item:last-child {
+    border-bottom: none;
+  }
+
+  .summary-line {
+    display: flex;
+    justify-content: space-between;
+    font-weight: 600;
+    margin-top: 18px;
+    font-size: 18px;
+  }
+
+  .form-row {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+
+  .form-group {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .form-group label {
+    font-weight: 600;
+  }
+
+  .form-group input,
+  .form-group textarea {
+    border: 1px solid #d1d5db;
+    border-radius: 12px;
+    padding: 10px 14px;
+    font-size: 15px;
+  }
+
+  .radio-group {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 18px;
+  }
+
+  .radio-option {
+    border: 1px solid #d1d5db;
+    border-radius: 12px;
+    padding: 10px 16px;
+    cursor: pointer;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+
+  .radio-option input {
+    margin: 0;
+  }
+
+  .radio-option.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .radio-option.disabled input {
+    cursor: not-allowed;
+  }
+
+  .delivery-info {
+    border: 1px solid #dbeafe;
+    background: #eff6ff;
+    border-radius: 16px;
+    padding: 16px 18px;
+    margin-bottom: 18px;
+    display: none;
+  }
+
+  .delivery-info.active {
+    display: block;
+  }
+
+  .pvz-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 16px;
+    margin-top: 14px;
+  }
+
+  .pvz-card {
+    position: relative;
+    border: 1px solid #dbeafe;
+    border-radius: 16px;
+    padding: 16px;
+    background: #fff;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+
+  .pvz-card input {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    margin: 0;
+  }
+
+  .pvz-card.active {
+    border-color: #2563eb;
+    box-shadow: 0 10px 22px rgba(37, 99, 235, 0.12);
+  }
+
+  .pvz-card__title {
+    font-weight: 600;
+    font-size: 1rem;
+  }
+
+  .pvz-card__meta {
+    color: #475569;
+    font-size: 0.9rem;
+  }
+
+  .pvz-card__description {
+    font-size: 0.85rem;
+    color: #6b7280;
+  }
+
+  .pvz-empty {
+    color: #475569;
+    margin-top: 10px;
+  }
+
+  .hidden-field {
+    display: none;
+  }
+
+  .btn-primary {
+    border: none;
+    padding: 14px 24px;
+    font-size: 16px;
+    border-radius: 12px;
+    background: #2563eb;
+    color: #fff;
+    font-weight: 600;
+    cursor: pointer;
+    width: 100%;
+    margin-top: 12px;
+  }
+
+  .btn-secondary {
+    border: none;
+    background: #e0f2fe;
+    color: #0c4a6e;
+    border-radius: 12px;
+    padding: 10px 16px;
+    font-weight: 600;
+    cursor: pointer;
+    align-self: flex-start;
+  }
+
+  .agreement {
+    display: flex;
+    gap: 12px;
+    margin-top: 12px;
+    align-items: flex-start;
+    font-size: 14px;
+    line-height: 1.4;
+  }
+
+  .radio-errors,
+  .field-error {
+    color: #b91c1c;
+    font-size: 13px;
+  }
+
+  .pvz-message {
+    color: #15803d;
+    font-weight: 600;
+    display: none;
+  }
+
+  @media (max-width: 960px) {
+    .checkout-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+<h1 style="margin-bottom:24px;">Оформление заказа</h1>
+<div class="checkout-grid">
+  <section class="panel">
+    <h2>Ваш заказ</h2>
+    {% for item in items %}
+      <div class="order-item">
+        <div>
+          <div style="font-weight:600;">{{ item.product.name }}</div>
+          <div style="color:#6b7280;">Количество: {{ item.quantity }}</div>
+        </div>
+        <div style="text-align:right;">
+          <div>{{ item.product.price }} ₽ / шт.</div>
+          <div style="font-weight:600;">{{ item.line_total }} ₽</div>
+        </div>
+      </div>
+    {% endfor %}
+    <div class="summary-line">
+      <span>Итого</span>
+      <span>{{ total_cost }} ₽</span>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>Данные для заказа</h2>
+    <form method="post" novalidate id="checkout-form">
+      {% csrf_token %}
+      <div class="form-row">
+        <div class="form-group">
+          <label for="{{ form.full_name.id_for_label }}">Имя</label>
+          {{ form.full_name }}
+          {% if form.full_name.errors %}
+            <div class="field-error">{{ form.full_name.errors.0 }}</div>
+          {% endif %}
+        </div>
+        <div class="form-group">
+          <label for="{{ form.phone.id_for_label }}">Телефон</label>
+          {{ form.phone }}
+          {% if form.phone.errors %}
+            <div class="field-error">{{ form.phone.errors.0 }}</div>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="{{ form.email.id_for_label }}">Email</label>
+        {{ form.email }}
+        {% if form.email.errors %}
+          <div class="field-error">{{ form.email.errors.0 }}</div>
+        {% endif %}
+      </div>
+
+      <div class="form-group">
+        <label>Способ получения</label>
+        {% with current_delivery=form.delivery_type.value|default:'pickup' %}
+        <div class="radio-group" id="delivery-options">
+          {% for value, label in form.fields.delivery_type.choices %}
+            {% if value == "pvz" and not pickup_points %}
+              <label class="radio-option disabled">
+                <input type="radio" name="{{ form.delivery_type.name }}" value="{{ value }}" disabled>
+                <span>{{ label }} (недоступно)</span>
+              </label>
+            {% else %}
+              <label class="radio-option">
+                <input type="radio" name="{{ form.delivery_type.name }}" value="{{ value }}" {% if current_delivery == value %}checked{% endif %}>
+                <span>{{ label }}</span>
+              </label>
+            {% endif %}
+          {% endfor %}
+        </div>
+        {% endwith %}
+        {% if form.delivery_type.errors %}
+          <div class="radio-errors">{{ form.delivery_type.errors.0 }}</div>
+        {% endif %}
+      </div>
+
+      <div id="pickup-info" class="delivery-info">
+        <strong>Самовывоз со склада</strong>
+        <p>с 10:00 до 19:00 в будни, с 10 до 17:00 в выходные</p>
+        <p>Стоимость доставки: бесплатно</p>
+        <p>Срок доставки: 10 ноября</p>
+        <p>Срок хранения заказа: 3 дня</p>
+        <p>Адрес: Москва, Голубинская 4Ас1, Склад 335, этаж 3</p>
+        <p>Служба доставки: Самовывоз со склада</p>
+        <p>
+          Часы работы:<br>
+          10 ноября, понедельник — 10:00—19:00<br>
+          11 ноября, вторник — 10:00—19:00<br>
+          12 ноября, среда — 10:00—19:00<br>
+          13 ноября, четверг — 10:00—19:00<br>
+          14 ноября, пятница — 10:00—19:00<br>
+          15 ноября, суббота — 10:00—17:00<br>
+          16 ноября, воскресенье — 10:00—17:00
+        </p>
+      </div>
+
+      <div id="pvz-section" class="delivery-info">
+        <strong>Выберите пункт выдачи</strong>
+        {% if pickup_points %}
+          <div class="pvz-cards">
+            {% with selected_value=form.pickup_point.value|default_if_none:""|stringformat:"s" %}
+              {% for point in pickup_points %}
+                {% with point_id=point.id|stringformat:"s" %}
+                <label class="pvz-card {% if selected_value == point_id %}active{% endif %}">
+                  <input type="radio" name="pvz_choice" value="{{ point.id }}" {% if selected_value == point_id %}checked{% endif %}>
+                  <div class="pvz-card__title">{{ point.name }}</div>
+                  {% if point.company %}<div class="pvz-card__meta">Компания: {{ point.company }}</div>{% endif %}
+                  <div class="pvz-card__meta">Адрес: {{ point.address }}</div>
+                  {% if point.working_hours %}<div class="pvz-card__meta">Время работы: {{ point.working_hours }}</div>{% endif %}
+                  {% if point.description %}<div class="pvz-card__description">{{ point.description }}</div>{% endif %}
+                </label>
+                {% endwith %}
+              {% endfor %}
+            {% endwith %}
+          </div>
+        {% else %}
+          <p class="pvz-empty">Пункты выдачи пока не добавлены.</p>
+        {% endif %}
+        <div class="field-error" id="pvz-error" style="display:none;">Выберите пункт выдачи.</div>
+      </div>
+
+      <div class="hidden-field">
+        {{ form.pickup_point }}
+      </div>
+      {% if form.pickup_point.errors %}
+        <div class="field-error">{{ form.pickup_point.errors.0 }}</div>
+      {% endif %}
+
+      <div class="form-group">
+        <label>Способ оплаты</label>
+        {% with current_payment=form.payment_method.value|default:'card_now' %}
+        <div class="radio-group">
+          {% for value, label in form.fields.payment_method.choices %}
+            <label class="radio-option">
+              <input type="radio" name="{{ form.payment_method.name }}" value="{{ value }}" {% if current_payment == value %}checked{% endif %}>
+              <span>{{ label }}</span>
+            </label>
+          {% endfor %}
+        </div>
+        {% endwith %}
+        {% if form.payment_method.errors %}
+          <div class="radio-errors">{{ form.payment_method.errors.0 }}</div>
+        {% endif %}
+      </div>
+
+      <div class="form-group">
+        <label for="{{ form.comment.id_for_label }}">Комментарий к заказу</label>
+        {{ form.comment }}
+        {% if form.comment.errors %}
+          <div class="field-error">{{ form.comment.errors.0 }}</div>
+        {% endif %}
+      </div>
+
+      <div class="agreement">
+        {{ form.accept_terms }}
+        <label for="{{ form.accept_terms.id_for_label }}">{{ form.accept_terms.label }}</label>
+      </div>
+      {% if form.accept_terms.errors %}
+        <div class="field-error">{{ form.accept_terms.errors.0 }}</div>
+      {% endif %}
+
+      <button type="submit" class="btn-primary">Подтвердить заказ</button>
+    </form>
+  </section>
+</div>
+
+<script>
+  const deliveryRadios = document.querySelectorAll('input[name="{{ form.delivery_type.name }}"]');
+  const pickupInfo = document.getElementById("pickup-info");
+  const pvzSection = document.getElementById("pvz-section");
+  const pickupField = document.getElementById("{{ form.pickup_point.id_for_label }}");
+  const pvzError = document.getElementById("pvz-error");
+  const pvzRadios = document.querySelectorAll('input[name="pvz_choice"]');
+  const pvzCards = document.querySelectorAll(".pvz-card");
+  const checkoutForm = document.getElementById("checkout-form");
+
+  function toggleDeliverySections(value) {
+    if (value === "pickup") {
+      pickupInfo.classList.add("active");
+      pvzSection.classList.remove("active");
+    } else {
+      pickupInfo.classList.remove("active");
+      pvzSection.classList.add("active");
+    }
+  }
+
+  deliveryRadios.forEach((radio) => {
+    radio.addEventListener("change", (event) => {
+      toggleDeliverySections(event.target.value);
+    });
+  });
+
+  const initialDelivery = [...deliveryRadios].find((radio) => radio.checked)?.value || "pickup";
+  toggleDeliverySections(initialDelivery);
+
+  if (!pickupField) {
+    console.warn("Pickup field is missing in the checkout form.");
+  }
+
+  const setActiveCard = (radio) => {
+    pvzCards.forEach((card) => card.classList.remove("active"));
+    if (radio && radio.closest(".pvz-card")) {
+      radio.closest(".pvz-card").classList.add("active");
+    }
+  };
+
+  pvzRadios.forEach((radio) => {
+    if (radio.checked && pickupField) {
+      pickupField.value = radio.value;
+      setActiveCard(radio);
+    }
+    radio.addEventListener("change", () => {
+      if (pickupField) {
+        pickupField.value = radio.value;
+      }
+      pvzError.style.display = "none";
+      setActiveCard(radio);
+    });
+  });
+
+  checkoutForm?.addEventListener("submit", (event) => {
+    const currentDelivery = [...deliveryRadios].find((radio) => radio.checked)?.value;
+    if (currentDelivery === "pvz") {
+      if (!pickupField || !pickupField.value) {
+        pvzError.style.display = "block";
+        event.preventDefault();
+        event.stopPropagation();
+      }
+    }
+  });
+</script>
+{% endblock %}

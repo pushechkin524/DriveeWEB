@@ -1,32 +1,243 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>{% block title %}Drivee{% endblock %}</title>
   <link rel="stylesheet" href="/static/css/main.css">
-  {% block head %}{% endblock %}
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #f5f6fa;
+      color: #222;
+      margin: 0;
+      padding: 0;
+    }
+
+    header {
+      background: #111827;
+      color: #fff;
+      padding: 16px 40px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: nowrap;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 40px;
+    }
+
+    .logo {
+      font-weight: 700;
+      font-size: 1.5rem;
+      text-decoration: none;
+      color: #fff;
+    }
+
+    nav a {
+      margin-left: 20px;
+      color: #e5e7eb;
+      text-decoration: none;
+      font-weight: 500;
+      transition: color 0.2s ease;
+    }
+
+    nav a:hover {
+      color: #fff;
+    }
+
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      white-space: nowrap;
+    }
+
+    .user-name {
+      font-weight: 500;
+      color: #e5e7eb;
+      text-decoration: none;
+      transition: 0.2s;
+    }
+
+    .user-name:hover {
+      color: #ffffff;
+      text-decoration: underline;
+    }
+
+    .btn-logout {
+      background: transparent;
+      border: none;
+      color: #f87171;
+      cursor: pointer;
+      font-weight: 600;
+      transition: color 0.3s;
+    }
+
+    .btn-logout:hover {
+      color: #ef4444;
+    }
+
+    .btn-login {
+      background: #2563eb;
+      color: #fff;
+      border-radius: 6px;
+      padding: 6px 14px;
+      text-decoration: none;
+      font-weight: 500;
+      transition: background 0.3s;
+    }
+
+    .btn-login:hover {
+      background: #1e40af;
+    }
+
+    .btn-register {
+      color: #e5e7eb;
+      text-decoration: none;
+      font-weight: 500;
+      transition: color 0.3s;
+    }
+
+    .btn-register:hover {
+      color: #fff;
+    }
+
+    .btn-cart {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: #f97316;
+      color: #fff;
+      padding: 6px 16px;
+      border-radius: 999px;
+      text-decoration: none;
+      font-weight: 600;
+      transition: transform 0.2s ease, background 0.2s ease;
+    }
+
+    .btn-cart:hover {
+      background: #ea580c;
+      transform: translateY(-1px);
+    }
+
+    .cart-count {
+      background: rgba(255, 255, 255, 0.2);
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 0.85rem;
+    }
+
+    main {
+      max-width: 1100px;
+      margin: 40px auto;
+      padding: 0 20px;
+    }
+
+    footer {
+      text-align: center;
+      padding: 20px;
+      background: #111827;
+      color: #9ca3af;
+      margin-top: 60px;
+    }
+
+    .messages {
+      position: fixed;
+      top: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: min(90vw, 640px);
+      z-index: 999;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding: 0 12px;
+    }
+
+    .message {
+      padding: 14px 22px;
+      border-radius: 24px;
+      font-weight: 600;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
+      text-align: center;
+      border: 1px solid transparent;
+    }
+
+    .message-success {
+      background: #dbf8c1;
+      color: #1a4212;
+      border-color: rgba(34, 197, 94, 0.35);
+    }
+
+    .message-info {
+      background: #e0f2fe;
+      color: #0c4a6e;
+      border-color: rgba(14, 165, 233, 0.35);
+    }
+
+    .message-error {
+      background: #fee2e2;
+      color: #b91c1c;
+      border-color: rgba(248, 113, 113, 0.4);
+    }
+  </style>
 </head>
 <body>
-  <header class="nav">
-    <a href="{% url 'home' %}" class="logo">Drivee</a>
-    <nav>
-      <a href="{% url 'catalog' %}">Каталог</a>
-      {% if user.is_authenticated %}
+  <header>
+    <div class="header-left">
+      <a href="{% url 'home' %}" class="logo">Drivee</a>
+      <nav>
+        <a href="{% url 'catalog' %}">Каталог</a>
         <a href="{% url 'favorites' %}">Избранное</a>
-        <a href="{% url 'logout' %}">Выйти</a>
+        <a href="{% url 'categories' %}">Категории</a>
+      </nav>
+      <a href="{% url 'cart' %}" class="btn-cart">
+        🛒 Корзина
+        {% if cart_item_count %}
+          <span class="cart-count">{{ cart_item_count }}</span>
+        {% endif %}
+      </a>
+    </div>
+
+    <div class="user-info">
+      {% if user.is_authenticated %}
+        {% if user.is_superuser or user.role and user.role.role == "admin" %}
+          <a href="{% url 'dashboard:admin_panel' %}" class="btn-login" style="background:#059669;">Панель администратора</a>
+        {% elif user.role and user.role.role == "manager" %}
+          <a href="{% url 'dashboard:manager_panel' %}" class="btn-login" style="background:#0ea5e9;">Панель менеджера</a>
+        {% endif %}
+        <a href="{% url 'profile' %}" class="user-name">
+          {{ user.first_name|default:user.email|default:"Пользователь" }}
+        </a>
+        <form action="{% url 'logout' %}" method="post" style="display:inline;">
+          {% csrf_token %}
+          <button type="submit" class="btn-logout">Выйти</button>
+        </form>
       {% else %}
-        <a href="{% url 'login' %}">Войти</a>
+        <a href="{% url 'login' %}" class="btn-login">Войти</a>
+        <a href="{% url 'register' %}" class="btn-register">Регистрация</a>
       {% endif %}
-    </nav>
+    </div>
   </header>
 
-  <main class="container">
+  {% if messages %}
+    <div class="messages">
+      {% for message in messages %}
+        <div class="message message-{{ message.tags }}">{{ message }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <main>
     {% block content %}{% endblock %}
   </main>
 
-  <footer class="footer">
-    <small>© {{ now|date:"Y" }} Drivee</small>
+  <footer>
+    © 2025 Drivee. Все права защищены.
   </footer>
 </body>
 </html>

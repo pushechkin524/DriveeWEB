@@ -1,21 +1,136 @@
 {% extends "base.html" %}
 {% block title %}Вход — Drivee{% endblock %}
-{% block content %}
-  <h1>Войти</h1>
-  <form method="post">
-    {% csrf_token %}
-    <p>
-      <label>Email:</label><br>
-      <input type="text" name="username">
-    </p>
-    <p>
-      <label>Пароль:</label><br>
-      <input type="password" name="password">
-    </p>
-    <button type="submit">Войти</button>
-  </form>
 
-  {% if form.errors %}
-    <p style="color:red;">Неверный логин или пароль</p>
-  {% endif %}
+{% block content %}
+<div class="register-container">
+  <div class="register-card">
+    <h1>Вход в аккаунт</h1>
+
+    {% if form.errors %}
+      <div class="error-box">
+        <p>Неверный email или пароль.</p>
+      </div>
+    {% endif %}
+
+    <form method="post" class="register-form">
+      {% csrf_token %}
+      <div class="form-group">
+        <label for="id_username">Email:</label>
+        <input type="email" name="username" id="id_username" placeholder="Введите email" required>
+      </div>
+
+      <div class="form-group">
+        <label for="id_password">Пароль:</label>
+        <input type="password" name="password" id="id_password" placeholder="Введите пароль" required>
+      </div>
+
+      <button type="submit" class="btn-primary">Войти</button>
+    </form>
+
+    <p class="switch-link">
+      Нет аккаунта? <a href="{% url 'register' %}">Зарегистрироваться</a>
+    </p>
+  </div>
+</div>
+
+<style>
+  body {
+    background-color: #f8f9fc;
+    font-family: 'Inter', sans-serif;
+  }
+
+  .register-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 85vh;
+  }
+
+  .register-card {
+    background: white;
+    padding: 40px;
+    border-radius: 16px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+    width: 100%;
+    max-width: 420px;
+    border: 1px solid #e5e7eb;
+  }
+
+  .register-card h1 {
+    text-align: center;
+    margin-bottom: 25px;
+    font-size: 26px;
+    color: #333;
+  }
+
+  .register-form .form-group {
+    margin-bottom: 20px;
+  }
+
+  .register-form label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 500;
+    color: #444;
+  }
+
+  .register-form input {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 15px;
+    transition: 0.2s ease;
+  }
+
+  .register-form input:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+  }
+
+  .btn-primary {
+    width: 100%;
+    background-color: #3b82f6;
+    color: white;
+    padding: 12px;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.3s ease;
+  }
+
+  .btn-primary:hover {
+    background-color: #2563eb;
+  }
+
+  .switch-link {
+    text-align: center;
+    margin-top: 18px;
+    font-size: 14px;
+    color: #555;
+  }
+
+  .switch-link a {
+    color: #3b82f6;
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  .switch-link a:hover {
+    text-decoration: underline;
+  }
+
+  .error-box {
+    background-color: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #fca5a5;
+    padding: 10px 12px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    text-align: center;
+  }
+</style>
 {% endblock %}

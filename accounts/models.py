@@ -5,11 +5,20 @@ from django.contrib.auth.models import (
 
 
 class Role(models.Model):
+    class RoleName(models.TextChoices):
+        USER = ("user", "Пользователь")
+        MANAGER = ("manager", "Менеджер")
+        ADMIN = ("admin", "Администратор")
+
     role_id = models.BigAutoField(primary_key=True)
-    role = models.CharField(max_length=255, unique=True)
+    role = models.CharField(
+        max_length=255,
+        unique=True,
+        choices=RoleName.choices,
+    )
 
     def __str__(self):
-        return self.role
+        return self.get_role_display()
 
 
 class UserManager(BaseUserManager):
@@ -45,3 +54,15 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self):
         return self.email
+
+    @property
+    def role_code(self):
+        return getattr(self.role, "role", None)
+
+    def is_admin_role(self):
+        if self.is_superuser:
+            return True
+        return self.role_code == Role.RoleName.ADMIN
+
+    def is_manager_role(self):
+        return self.role_code == Role.RoleName.MANAGER

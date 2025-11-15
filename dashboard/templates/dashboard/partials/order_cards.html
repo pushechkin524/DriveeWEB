@@ -1,0 +1,80 @@
+{% for order in orders %}
+  {% with status=order.status|default:"new" %}
+  <div class="order-card{% if highlight_new %} order-card--new{% endif %}" data-order-id="{{ order.id }}">
+    <div class="order-head">
+      <div>
+        <strong>#{{ order.id }}</strong>
+        <div class="order-date">{{ order.created_at|date:"d.m.Y H:i" }}</div>
+      </div>
+      <span class="order-status {{ status }}">
+        {% if order.status == "confirmed" %}
+          Подтверждён
+        {% elif order.status == "declined" %}
+          Отменён
+        {% else %}
+          Новый
+        {% endif %}
+      </span>
+    </div>
+
+    <div class="order-items">
+      {% for item in order.cart_snapshot %}
+        <div class="order-item">
+          <span>{{ item.name }} · {{ item.quantity }} шт.</span>
+          <span>{{ item.line_total }} ₽</span>
+        </div>
+      {% endfor %}
+    </div>
+
+    <p style="margin:0 0 8px;color:#94a3b8;">
+      Покупатель: {{ order.full_name }} — {{ order.email }}<br>
+      Телефон: {{ order.phone }}<br>
+      Доставка: {{ order.get_delivery_type_display }}{% if order.pickup_point %} — {{ order.pickup_point.name }}{% endif %}<br>
+      Оплата: {{ order.get_payment_method_display }}
+    </p>
+
+    <div class="order-note">
+      <label for="comment-{{ order.id }}">Комментарий</label>
+      <form method="post" style="display:flex;flex-direction:column;gap:8px;">
+        {% csrf_token %}
+        <input type="hidden" name="section" value="orders">
+        <input type="hidden" name="action" value="update">
+        <input type="hidden" name="object_id" value="{{ order.id }}">
+        <input type="hidden" name="status" value="{{ order.status }}">
+        <input type="hidden" name="delivery_type" value="{{ order.delivery_type }}">
+        <input type="hidden" name="payment_method" value="{{ order.payment_method }}">
+        <textarea id="comment-{{ order.id }}" name="comment">{{ order.comment }}</textarea>
+        <button class="btn btn-light" style="align-self:flex-end;">Сохранить заметку</button>
+      </form>
+    </div>
+
+    <div class="order-footer">
+      <div class="order-total">Итого: {{ order.total_amount }} ₽</div>
+      <div class="order-actions">
+        {% if order.status != "confirmed" %}
+          <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="section" value="orders">
+            <input type="hidden" name="action" value="confirm">
+            <input type="hidden" name="object_id" value="{{ order.id }}">
+            <button class="btn btn-success">Подтвердить</button>
+          </form>
+        {% endif %}
+        {% if order.status != "declined" %}
+          <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="section" value="orders">
+            <input type="hidden" name="action" value="decline">
+            <input type="hidden" name="object_id" value="{{ order.id }}">
+            <button class="btn btn-warning">Отказать</button>
+          </form>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% endwith %}
+{% empty %}
+  {% if show_empty %}
+    <div class="orders-empty">Заказов пока нет.</div>
+  {% endif %}
+{% endfor %}

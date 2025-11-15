@@ -8,9 +8,11 @@ from .models import (
 
 
 class CategorySerializer(serializers.ModelSerializer):
+    main_category_label = serializers.CharField(source="get_main_category_display", read_only=True)
+
     class Meta:
         model = Category
-        fields = "__all__"
+        fields = ["id", "name", "main_category", "main_category_label", "slug", "description", "group"]
 
 
 class BrandSerializer(serializers.ModelSerializer):

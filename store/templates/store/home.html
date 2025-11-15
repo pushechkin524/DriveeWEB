@@ -1,11 +1,439 @@
 {% extends "base.html" %}
-{% block title %}Главная — Drivee{% endblock %}
+{% load static %}
+
+{% block title %}Drivee — Главная{% endblock %}
 
 {% block content %}
-  <h1>Интернет-магазин автотоваров Drivee</h1>
-  <p>Добро пожаловать! Перейдите в <a href="{% url 'catalog' %}">каталог</a>, чтобы посмотреть товары.</p>
+<style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    width: 100%;
+    background-color: #ffffffff;
+    overflow-x: hidden;
+  }
 
-  <div style="margin-top:24px;">
-    <a class="btn" href="{% url 'catalog' %}">Перейти в каталог →</a>
+  main {
+    padding: 0;
+    margin: 0;
+    max-width: none;
+  }
+
+  /* --- HERO --- */
+  .hero {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    background: url("{% static 'img/Главная картинка 1.png' %}") center center / cover no-repeat;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    color: #fff;
+    overflow: hidden;
+    box-shadow: inset 0 0 0 9999px rgba(0, 0, 0, 0.45);
+  }
+
+  .hero-content {
+    position: relative;
+    z-index: 2;
+    padding: 0 20px;
+    max-width: 700px;
+  }
+
+  .hero-content h1 {
+    font-size: 3rem;
+    font-weight: 800;
+    margin-bottom: 20px;
+    line-height: 1.2;
+  }
+
+  .hero-content p {
+    font-size: 1.2rem;
+    color: #e5e7eb;
+    margin-bottom: 35px;
+  }
+
+  .hero-btn {
+    background: #2563eb;
+    color: #fff;
+    padding: 14px 36px;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 1.1rem;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    display: inline-block;
+  }
+
+  .hero-btn:hover {
+    background: #1e3a8a;
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(37, 99, 235, 0.3);
+  }
+
+  /* --- CATEGORIES --- */
+  h2 {
+    text-align: center;
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin: 60px 0 30px;
+    color: #111;
+  }
+
+  .categories-container {
+    max-width: 1300px;
+    margin: 0 auto 80px auto;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 20px;
+    padding: 0 20px;
+  }
+
+  .category-card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 16px;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+    cursor: pointer;
+    transition: all 0.25s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-decoration: none;
+    color: #111;
+    text-align: center;
+    overflow: hidden;
+  }
+
+  .category-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
+  }
+
+  .category-icon {
+    font-size: 24px;
+    color: #2563eb;
+    margin-bottom: 6px;
+  }
+
+  .category-title {
+    font-size: 1rem;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+
+  .category-count {
+    color: #6b7280;
+    font-size: 0.85rem;
+    margin-bottom: 10px;
+  }
+
+  .category-image {
+    width: 100%;
+    height: 90px;
+    object-fit: contain;
+    border-radius: 10px;
+  }
+
+  @media (max-width: 1100px) {
+    .categories-container {
+      grid-template-columns: repeat(4, 1fr);
+    }
+  }
+
+  @media (max-width: 900px) {
+    .categories-container {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+
+  @media (max-width: 600px) {
+    .categories-container {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (max-width: 400px) {
+    .categories-container {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-content">
+    <h1>Все запчасти для вашего автомобиля в одном месте</h1>
+    <p>Drivee — ваш надёжный помощник в мире автозапчастей. Быстро, удобно и с гарантией качества.</p>
+    <a href="{% url 'catalog' %}" class="hero-btn">Перейти в каталог</a>
   </div>
+</section>
+
+<!-- CATEGORIES -->
+<h2>Категории товаров</h2>
+<div class="categories-container">
+  <a href="#" class="category-card">
+    <div class="category-icon">⚙️</div>
+    <div class="category-title">Запчасти для ТО</div>
+    <div class="category-count">124 598 товаров</div>
+    <img src="{% static 'img/6f14fb6324e8eca978dcf3aa7d995aa8.jpg' %}" alt="Запчасти" class="category-image">
+  </a>
+
+  <a href="#" class="category-card">
+    <div class="category-icon">🛞</div>
+    <div class="category-title">Шины</div>
+    <div class="category-count">60 239 товаров</div>
+    <img src="{% static 'img/шины.png' %}" alt="Шины" class="category-image">
+  </a>
+
+  <a href="#" class="category-card">
+    <div class="category-icon">💿</div>
+    <div class="category-title">Диски</div>
+    <div class="category-count">74 175 товаров</div>
+    <img src="{% static 'img/диски .jpg' %}" alt="Диски" class="category-image">
+  </a>
+
+  <a href="#" class="category-card">
+    <div class="category-icon">🔋</div>
+    <div class="category-title">Аккумуляторы</div>
+    <div class="category-count">4 348 товаров</div>
+    <img src="{% static 'img/акум.jpg' %}" alt="Аккумуляторы" class="category-image">
+  </a>
+
+  <a href="#" class="category-card">
+    <div class="category-icon">🛢️</div>
+    <div class="category-title">Масла и жидкости</div>
+    <div class="category-count">31 447 товаров</div>
+    <img src="{% static 'img/масла .jpg' %}" alt="Масла" class="category-image">
+  </a>
+
+  <a href="#" class="category-card">
+    <div class="category-icon">🧴</div>
+    <div class="category-title">Автохимия</div>
+    <div class="category-count">14 243 товара</div>
+    <img src="{% static 'img/химия .jpg' %}" alt="Автохимия" class="category-image">
+  </a>
+
+  <a href="#" class="category-card">
+    <div class="category-icon">🎄</div>
+    <div class="category-title">Аксессуары</div>
+    <div class="category-count">287 557 товаров</div>
+    <img src="{% static 'img/аксесс.webp' %}" alt="Аксессуары" class="category-image">
+  </a>
+
+  <a href="#" class="category-card">
+    <div class="category-icon">🔧</div>
+    <div class="category-title">Инструменты</div>
+    <div class="category-count">100 444 товара</div>
+    <img src="{% static 'img/инсстру.webp' %}" alt="Инструменты" class="category-image">
+  </a>
+
+  <a href="#" class="category-card">
+    <div class="category-icon">💡</div>
+    <div class="category-title">Электроника</div>
+    <div class="category-count">7 707 товаров</div>
+    <img src="{% static 'img/электроника.jpg' %}" alt="Электроника" class="category-image">
+  </a>
+
+  <a href="#" class="category-card">
+    <div class="category-icon">🧽</div>
+    <div class="category-title">Щётки</div>
+    <div class="category-count">15 618 товаров</div>
+    <img src="{% static 'img/дворники .jpg' %}" alt="Щётки" class="category-image">
+  </a>
+</div>
+
+<h2>Услуги</h2>
+
+<div class="services-container">
+  <a href="#" class="service-card">
+    <img src="{% static 'img/диагностика.jpg' %}" alt="Оценить стоимость ремонта">
+    <div class="service-overlay">
+      <h3>Оценить<br>стоимость ремонта</h3>
+    </div>
+  </a>
+
+  <a href="#" class="service-card">
+    <img src="{% static 'img/хранение.jpg' %}" alt="Сезонное хранение шин">
+    <div class="service-overlay">
+      <h3>Сезонное<br>хранение шин</h3>
+    </div>
+  </a>
+
+  <a href="#" class="service-card">
+    <img src="{% static 'img/обслуж.jpg' %}" alt="Обслуживание автопарка">
+    <div class="service-overlay">
+      <h3>Обслуживание<br>автопарка</h3>
+    </div>
+  </a>
+</div>
+
+<style>
+  /* === УСЛУГИ === */
+  .services-container {
+    max-width: 1300px;
+    margin: 0 auto 80px auto;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    padding: 0 20px;
+  }
+
+  .service-card {
+    position: relative;
+    border-radius: 20px;
+    overflow: hidden;
+    height: 220px;
+    display: block;
+    text-decoration: none;
+    color: #fff;
+    cursor: pointer;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+
+  .service-card img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.4s ease;
+  }
+
+  .service-card:hover img {
+    transform: scale(1.05);
+  }
+
+  .service-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.5));
+    display: flex;
+    align-items: flex-end;
+    justify-content: flex-start;
+    padding: 20px;
+  }
+
+  .service-overlay h3 {
+    font-size: 1.2rem;
+    font-weight: 700;
+    line-height: 1.3;
+    margin: 0;
+  }
+
+  .service-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.15);
+  }
+
+  @media (max-width: 1000px) {
+    .services-container {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (max-width: 650px) {
+    .services-container {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+<h2>Товары дня</h2>
+
+<div class="daily-deals-container">
+  {% for deal in daily_deals %}
+    <div class="product-card">
+  {% if deal.product.image %}
+    <img src="{{ deal.product.image.url }}" alt="{{ deal.product.name }}">
+  {% else %}
+    <img src="{% static 'img/нет фото.png' %}" alt="Нет изображения">
+  {% endif %}
+      <div class="product-info">
+        <h3>{{ deal.product.brand.name }}</h3>
+        <p>{{ deal.product.name|truncatechars:60 }}</p>
+        <div class="product-price">{{ deal.product.price }} ₽</div>
+        <button class="add-btn">Добавить</button>
+      </div>
+    </div>
+  {% empty %}
+    <p style="text-align:center;">Нет товаров дня.</p>
+  {% endfor %}
+</div>
+
+<style>
+  .daily-deals-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 20px;
+    max-width: 1300px;
+    margin: 0 auto 80px;
+    padding: 0 20px;
+  }
+
+  .product-card {
+    background: #fff;
+    border-radius: 14px;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+    transition: all 0.25s ease;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+
+  .product-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
+  }
+
+  .product-card img {
+    width: 100%;
+    height: 180px;
+    object-fit: contain;
+    background: #f9fafb;
+  }
+
+  .product-info {
+    padding: 12px;
+  }
+
+  .product-info h3 {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #555;
+    margin: 4px 0;
+  }
+
+  .product-info p {
+    font-size: 0.85rem;
+    color: #333;
+    min-height: 36px;
+  }
+
+  .product-price {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-top: 8px;
+  }
+
+  .add-btn {
+    margin-top: 10px;
+    width: 100%;
+    background: #ef4444;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 0;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+
+  .add-btn:hover {
+    background: #dc2626;
+  }
+</style>
+
 {% endblock %}
