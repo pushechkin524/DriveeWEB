@@ -509,6 +509,75 @@
     font-weight: 700;
   }
 
+  .order-filter-form {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+
+  .order-filter-form label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-weight: 600;
+  }
+
+  .order-filter-form input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+  }
+
+  .report-form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 20px;
+    align-items: flex-end;
+  }
+
+  .report-form .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .report-form input[type="date"] {
+    padding: 10px 14px;
+    border-radius: 14px;
+    border: 1px solid rgba(148, 163, 184, 0.4);
+    background: rgba(15, 23, 42, 0.7);
+    color: #f8fafc;
+  }
+
+  .report-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 12px;
+  }
+
+  .report-table th,
+  .report-table td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.3);
+  }
+
+  .report-table th {
+    text-transform: uppercase;
+    font-size: 0.8rem;
+    letter-spacing: 0.08em;
+    color: rgba(226, 232, 240, 0.75);
+  }
+
+  .report-summary {
+    text-align: right;
+    margin-top: 12px;
+    font-weight: 700;
+    font-size: 1.2rem;
+  }
+
   .order-card {
     border-radius: 22px;
     padding: 22px;
@@ -1259,6 +1328,14 @@
   {% elif section == "orders" %}
     <div class="panel">
       <h2>Заказы</h2>
+      <form method="get" class="order-filter-form">
+        <input type="hidden" name="section" value="orders">
+        <label>
+          <input type="checkbox" name="confirmed_only" value="1" {% if orders_confirmed_only %}checked{% endif %}>
+          Только подтверждённые
+        </label>
+        <button class="btn btn-primary" type="submit">Применить</button>
+      </form>
       <div class="order-status-stats">
         <div class="order-status-card order-status-card--new">
           <span>Новые</span>
@@ -1282,6 +1359,8 @@
       (function () {
         const container = document.getElementById("orders-container");
         if (!container) return;
+        const confirmedOnly = {{ orders_confirmed_only|yesno:"true,false" }};
+        if (confirmedOnly) return;
         const alertBox = document.getElementById("order-alert");
         const alertMessage = alertBox || null;
         let lastId = parseInt(container.dataset.lastId || "0", 10);
@@ -1329,6 +1408,96 @@
         setInterval(poll, 8000);
       })();
     </script>
+
+  {% elif section == "reports" %}
+    <div class="panel">
+      <h2>Отчёты по продажам</h2>
+      <div class="subnav">
+        {% for key,label in report_tab_options %}
+          <a href="?section=reports&report_tab={{ key }}" class="{% if report_tab == key %}active{% endif %}">{{ label }}</a>
+        {% endfor %}
+      </div>
+      <form method="get" class="report-form">
+        <input type="hidden" name="section" value="reports">
+        <input type="hidden" name="report_tab" value="{{ report_tab }}">
+        <div class="form-group">
+          {{ report_form.start_date.label_tag }}
+          {{ report_form.start_date }}
+          {{ report_form.start_date.errors }}
+        </div>
+        <div class="form-group">
+          {{ report_form.end_date.label_tag }}
+          {{ report_form.end_date }}
+          {{ report_form.end_date.errors }}
+        </div>
+        <label style="display:flex;align-items:center;gap:8px;">
+          {{ report_form.confirmed_only }}
+          {{ report_form.confirmed_only.label }}
+        </label>
+        <button type="submit" class="btn btn-primary">Показать</button>
+        <button type="submit" class="btn btn-success" name="export" value="1">Экспортировать в Excel</button>
+      </form>
+      <p>Период: {{ report_period_label }}</p>
+      {% if report_rows %}
+        {% if report_tab == "orders" %}
+          <table class="report-table">
+            <thead>
+              <tr>
+                <th>Заказ</th>
+                <th>Дата</th>
+                <th>Клиент</th>
+                <th>Сумма</th>
+                <th>Статус</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in report_rows %}
+                <tr>
+                  <td>#{{ row.order_id }}</td>
+                  <td>{{ row.date|date:"d.m.Y H:i" }}</td>
+                  <td>{{ row.customer }}</td>
+                  <td>{{ row.total|floatformat:2 }} ₽</td>
+                  <td>{{ row.status }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          <div class="report-summary">
+            Общая сумма заказов: {{ report_total|floatformat:2 }} ₽
+          </div>
+        {% else %}
+          <table class="report-table">
+            <thead>
+              <tr>
+                <th>Заказ</th>
+                <th>Дата</th>
+                <th>Товар</th>
+                <th>Кол-во</th>
+                <th>Цена</th>
+                <th>Сумма</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in report_rows %}
+                <tr>
+                  <td>#{{ row.order_id }}</td>
+                  <td>{{ row.date|date:"d.m.Y H:i" }}</td>
+                  <td>{{ row.product }}</td>
+                  <td>{{ row.quantity }}</td>
+                  <td>{{ row.price|floatformat:2 }} ₽</td>
+                  <td>{{ row.line_total|floatformat:2 }} ₽</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          <div class="report-summary">
+            Итого за период: {{ report_total|floatformat:2 }} ₽
+          </div>
+        {% endif %}
+      {% else %}
+        <p>Данных за выбранный период нет.</p>
+      {% endif %}
+    </div>
 
   {% elif section == "users" %}
     <div class="panel">

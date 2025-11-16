@@ -199,6 +199,29 @@ class UserForm(forms.ModelForm):
         role_field.queryset = Role.objects.filter(role__in=Role.RoleName.values)
         role_field.label_from_instance = lambda obj: obj.get_role_display()
 
+
+class SalesReportForm(forms.Form):
+    start_date = forms.DateField(
+        label="Период с",
+        widget=forms.DateInput(attrs={"type": "date"}),
+    )
+    end_date = forms.DateField(
+        label="по",
+        widget=forms.DateInput(attrs={"type": "date"}),
+    )
+    confirmed_only = forms.BooleanField(
+        label="Только подтверждённые",
+        required=False,
+    )
+
+    def clean(self):
+        cleaned = super().clean()
+        start = cleaned.get("start_date")
+        end = cleaned.get("end_date")
+        if start and end and start > end:
+            self.add_error("end_date", "Дата окончания должна быть позже даты начала.")
+        return cleaned
+
     def save(self, commit=True):
         password = self.cleaned_data.pop("password", "")
         user = super().save(commit=False)

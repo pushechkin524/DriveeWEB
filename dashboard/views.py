@@ -1,14 +1,17 @@
 from datetime import timedelta, date
+from decimal import Decimal
+from io import BytesIO
 from typing import Tuple
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Count
 from django.db.models.functions import TruncDate, TruncHour, TruncMonth
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
 from django.utils import timezone
+from openpyxl import Workbook
 
 from accounts.models import User, Role
 from store.models import (
@@ -31,6 +34,7 @@ from .forms import (
     AutoGoodsProductForm,
     BrandForm,
     CarForm,
+    SalesReportForm,
 )
 
 NAV_TABS = [
@@ -42,6 +46,7 @@ NAV_TABS = [
     ("orders", "Заказы"),
     ("users", "Пользователи"),
     ("pickups", "Пункты выдачи"),
+    ("reports", "Отчёты"),
 ]
 ADMIN_SECTIONS = {key for key, _ in NAV_TABS} | {"groups"}
 MANAGER_SECTIONS = {"categories", "groups", "brands", "products", "orders"}
@@ -79,6 +84,45 @@ def _render_panel(request, mode: str):
     analytics_range = request.GET.get("analytics_range") or "week"
     if analytics_range not in {"day", "week", "year"}:
         analytics_range = "week"
+    report_tab = request.GET.get("report_tab") or "products"
+    if report_tab not in {"products", "orders"}:
+        report_tab = "products"
+
+    report_initial = {
+        "start_date": timezone.now().date() - timedelta(days=6),
+        "end_date": timezone.now().date(),
+    }
+    report_form = SalesReportForm(initial=report_initial)
+    report_rows = []
+    report_total = Decimal("0")
+    report_period_label = f"{report_initial['start_date'].strftime('%d.%m.%Y')} — {report_initial['end_date'].strftime('%d.%m.%Y')}"
+    report_confirmed_only = False
+
+    if section == "reports":
+        if request.GET:
+            report_form = SalesReportForm(request.GET)
+        else:
+            report_form = SalesReportForm(initial=report_initial)
+        if report_form.is_valid():
+            report_start = report_form.cleaned_data["start_date"]
+            report_end = report_form.cleaned_data["end_date"]
+        else:
+            report_start = report_initial["start_date"]
+            report_end = report_initial["end_date"]
+        report_period_label = f"{report_start.strftime('%d.%m.%Y')} — {report_end.strftime('%d.%m.%Y')}"
+        if report_tab == "orders":
+            report_rows, report_total = _build_order_report_rows(report_start, report_end)
+            if request.GET.get("export") == "1":
+                return _export_orders_excel(report_rows, report_start, report_end, report_total)
+        report_confirmed_only = report_form.cleaned_data.get("confirmed_only", False) if report_form.is_valid() else False
+        if report_tab == "orders":
+            report_rows, report_total = _build_order_report_rows(report_start, report_end, report_confirmed_only)
+            if request.GET.get("export") == "1":
+                return _export_orders_excel(report_rows, report_start, report_end, report_total, report_confirmed_only)
+        else:
+            report_rows, report_total = _build_sales_rows(report_start, report_end, report_confirmed_only)
+            if request.GET.get("export") == "1":
+                return _export_sales_excel(report_rows, report_start, report_end, report_total, report_confirmed_only)
 
     if request.method == "POST":
         handler = {
@@ -103,6 +147,12 @@ def _render_panel(request, mode: str):
     ]
     analytics_range_label = dict(analytics_range_options).get(analytics_range, "Неделя")
 
+    confirmed_only = request.GET.get("confirmed_only") == "1"
+    orders_qs = OrderRequest.objects.select_related("user", "pickup_point")
+    if confirmed_only:
+        orders_qs = orders_qs.filter(status="confirmed")
+    orders_list = list(orders_qs.order_by("-created_at")[:50])
+
     context = {
         "section": section,
         "stats": _collect_stats(),
@@ -123,7 +173,7 @@ def _render_panel(request, mode: str):
         .filter(product_type=Product.ProductType.AUTO_GOODS)
         .order_by("-id")[:50],
         "order_form": OrderRequestForm(),
-        "orders": OrderRequest.objects.select_related("user", "pickup_point").order_by("-created_at")[:50],
+        "orders": orders_list,
         "user_form": UserForm(),
         "users": User.objects.order_by("-date_joined")[:50],
         "pickup_form": PickupPointForm(),
@@ -138,12 +188,20 @@ def _render_panel(request, mode: str):
         "main_category_choices": Category.MainCategory.choices,
         "cat_tab": cat_tab,
         "product_tab": product_tab,
+        "report_tab": report_tab,
+        "report_tab_options": [("products", "По товарам"), ("orders", "По заказам")],
         "panel_mode": mode,
         "panel_title": "Панель администратора" if mode == "admin" else "Панель менеджера",
         "role_choices": Role.objects.filter(role__in=Role.RoleName.values).order_by("role"),
         "analytics_range": analytics_range,
         "analytics_range_options": analytics_range_options,
         "analytics_range_label": analytics_range_label,
+        "report_form": report_form,
+        "report_rows": report_rows,
+        "report_total": report_total,
+        "report_period_label": report_period_label,
+        "orders_confirmed_only": confirmed_only,
+        "report_confirmed_only": report_confirmed_only,
     }
     return render(request, "dashboard/admin_panel.html", context)
 
@@ -248,6 +306,138 @@ def _increment_month(year: int, month: int) -> Tuple[int, int]:
         month = 1
         year += 1
     return year, month
+
+
+def _build_sales_rows(start_date, end_date, confirmed_only=False):
+    rows = []
+    total = Decimal("0")
+    qs = (
+        OrderRequest.objects.filter(
+            created_at__date__gte=start_date,
+            created_at__date__lte=end_date,
+        )
+        .order_by("created_at")
+    )
+    if confirmed_only:
+        qs = qs.filter(status="confirmed")
+    for order in qs:
+        snapshot = order.cart_snapshot or []
+        for item in snapshot:
+            quantity = int(item.get("quantity") or 0)
+            price = Decimal(str(item.get("price") or 0))
+            line_total = Decimal(str(item.get("line_total") or (price * quantity)))
+            rows.append(
+                {
+                    "order_id": order.id,
+                    "date": order.created_at,
+                    "product": item.get("name") or f"Товар #{item.get('product_id')}",
+                    "quantity": quantity,
+                    "price": price,
+                    "line_total": line_total,
+                }
+            )
+            total += line_total
+    return rows, total
+
+
+def _export_sales_excel(rows, start_date, end_date, total_amount, confirmed_only=False):
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Продажи"
+    ws["A1"] = "Отчёт по продажам"
+    note = f"Период: {start_date.strftime('%d.%m.%Y')} — {end_date.strftime('%d.%m.%Y')}"
+    if confirmed_only:
+        note += " (только подтверждённые)"
+    ws["A2"] = note
+    ws.append([])
+    headers = ["ID заказа", "Дата", "Товар", "Кол-во", "Цена", "Сумма"]
+    ws.append(headers)
+    for row in rows:
+        ws.append(
+            [
+                row["order_id"],
+                row["date"].strftime("%d.%m.%Y %H:%M"),
+                row["product"],
+                row["quantity"],
+                float(row["price"]),
+                float(row["line_total"]),
+            ]
+        )
+    ws.append([])
+    ws.append(["Итого", "", "", "", "", float(total_amount)])
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+    filename = f"sales_{start_date.strftime('%Y%m%d')}_{end_date.strftime('%Y%m%d')}.xlsx"
+    response = HttpResponse(
+        output.getvalue(),
+        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
+    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+    return response
+
+
+def _build_order_report_rows(start_date, end_date, confirmed_only=False):
+    rows = []
+    total = Decimal("0")
+    qs = (
+        OrderRequest.objects.filter(
+            created_at__date__gte=start_date,
+            created_at__date__lte=end_date,
+        )
+        .select_related("user")
+        .order_by("created_at")
+    )
+    if confirmed_only:
+        qs = qs.filter(status="confirmed")
+    for order in qs:
+        total += order.total_amount
+        rows.append(
+            {
+                "order_id": order.id,
+                "date": order.created_at,
+                "customer": order.full_name or order.email or (order.user.email if order.user else "—"),
+                "total": order.total_amount,
+                "status": order.status,
+            }
+        )
+    return rows, total
+
+
+def _export_orders_excel(rows, start_date, end_date, total_amount, confirmed_only=False):
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Заказы"
+    ws["A1"] = "Отчёт по заказам"
+    note = f"Период: {start_date.strftime('%d.%m.%Y')} — {end_date.strftime('%d.%m.%Y')}"
+    if confirmed_only:
+        note += " (только подтверждённые)"
+    ws["A2"] = note
+    ws.append([])
+    headers = ["ID заказа", "Дата", "Клиент", "Сумма", "Статус"]
+    ws.append(headers)
+    for row in rows:
+        ws.append(
+            [
+                row["order_id"],
+                row["date"].strftime("%d.%m.%Y %H:%M"),
+                row["customer"],
+                float(row["total"]),
+                row["status"],
+            ]
+        )
+    ws.append([])
+    ws.append(["Итого", "", "", float(total_amount), ""])
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+    filename = f"orders_{start_date.strftime('%Y%m%d')}_{end_date.strftime('%Y%m%d')}.xlsx"
+    response = HttpResponse(
+        output.getvalue(),
+        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
+    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+    return response
 
 
 def _handle_category_post(request):
