@@ -140,9 +140,9 @@
   }
 
   .product-form-grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
     width: 100%;
     box-sizing: border-box;
   }
@@ -190,9 +190,9 @@
   }
 
   .spec-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
   }
 
   .form-hint {
@@ -314,6 +314,11 @@
   .btn-warning {
     background: linear-gradient(120deg, #f97316, #dc2626);
     color: #fff;
+  }
+
+  .btn-secondary {
+    background: linear-gradient(120deg, #94a3b8, #475569);
+    color: #0f172a;
   }
 
   .btn:hover {
@@ -1044,20 +1049,41 @@
       </table>
     </div>
 
+  {% elif section == "backup" %}
+    <div class="panel">
+      <h2>Бекап базы</h2>
+      <p>Скачайте JSON с данными всех моделей (accounts и store). Доступно только администраторам.</p>
+      <div style="margin-top:16px;">
+        <a class="btn btn-primary" href="?section=backup&download=1">Сделать бекап</a>
+      </div>
+      <hr style="margin:24px 0;">
+      <h3>Восстановление из бекапа</h3>
+      <form method="post" enctype="multipart/form-data" style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+        {% csrf_token %}
+        <input type="hidden" name="section" value="backup">
+        <input type="file" name="backup_file" accept="application/json">
+        <button class="btn btn-primary" type="submit">Загрузить бекап</button>
+      </form>
+    </div>
+
   {% elif section == "products" %}
     <div class="panel">
       <div class="subnav">
         <a href="?section=products&product_tab=auto_parts" class="{% if product_tab == 'auto_parts' %}active{% endif %}">Автозапчасти</a>
         <a href="?section=products&product_tab=auto_goods" class="{% if product_tab == 'auto_goods' %}active{% endif %}">Автотовары</a>
+        <a href="?section=products&product_tab=tires" class="{% if product_tab == 'tires' %}active{% endif %}">Резина</a>
+        <a href="?section=products&product_tab=rims" class="{% if product_tab == 'rims' %}active{% endif %}">Диски</a>
+        <a href="?section=products&product_tab=batteries" class="{% if product_tab == 'batteries' %}active{% endif %}">Аккумуляторы</a>
       </div>
 
       {% if product_tab == "auto_goods" %}
         <h2>Автотовары</h2>
-        <form method="post" enctype="multipart/form-data" class="product-form-grid">
+        <form id="auto-good-form" method="post" enctype="multipart/form-data" class="product-form-grid">
           {% csrf_token %}
           <input type="hidden" name="action" value="create">
           <input type="hidden" name="section" value="products">
           <input type="hidden" name="product_tab" value="auto_goods">
+          <input type="hidden" name="object_id" value="">
 
           <div>
             {{ auto_goods_form.name.label_tag }}
@@ -1154,15 +1180,20 @@
             </div>
           </div>
 
-          <button class="btn btn-primary" style="grid-column:1 / -1;max-width:240px;">Добавить автотовар</button>
+          <div style="display:flex;gap:12px;grid-column:1 / -1;flex-wrap:wrap;">
+            <button class="btn btn-primary" data-mode="create" style="max-width:240px;">Добавить автотовар</button>
+            <button class="btn btn-success" data-mode="edit" style="display:none;max-width:240px;">Сохранить изменения</button>
+            <button type="button" class="btn btn-secondary" data-mode="cancel" style="display:none;max-width:200px;">Отменить</button>
+          </div>
         </form>
-      {% else %}
+      {% elif product_tab == "auto_parts" %}
         <h2>Автозапчасти</h2>
-        <form method="post" enctype="multipart/form-data" class="product-form-grid">
+        <form id="auto-part-form" method="post" enctype="multipart/form-data" class="product-form-grid">
           {% csrf_token %}
           <input type="hidden" name="action" value="create">
           <input type="hidden" name="section" value="products">
           <input type="hidden" name="product_tab" value="auto_parts">
+          <input type="hidden" name="object_id" value="">
 
           <div>
             {{ auto_part_form.name.label_tag }}
@@ -1260,7 +1291,265 @@
             </div>
           </div>
 
-          <button class="btn btn-primary" style="grid-column:1 / -1;max-width:240px;">Добавить автозапчасть</button>
+          <div style="display:flex;gap:12px;grid-column:1 / -1;flex-wrap:wrap;">
+            <button class="btn btn-primary" data-mode="create" style="max-width:240px;">Добавить автозапчасть</button>
+            <button class="btn btn-success" data-mode="edit" style="display:none;max-width:240px;">Сохранить изменения</button>
+            <button type="button" class="btn btn-secondary" data-mode="cancel" style="display:none;max-width:200px;">Отменить</button>
+          </div>
+        </form>
+      {% elif product_tab == "tires" %}
+        <h2>Резина</h2>
+        <form id="tire-form" method="post" enctype="multipart/form-data" class="product-form-grid">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="create">
+          <input type="hidden" name="section" value="products">
+          <input type="hidden" name="product_tab" value="tires">
+          <input type="hidden" name="object_id" value="">
+          <div>
+            {{ tire_form.name.label_tag }}
+            <span class="form-hint">Например: 205/55 R16</span>
+            {{ tire_form.name }}
+            {{ tire_form.name.errors }}
+          </div>
+          <div>
+            {{ tire_form.price.label_tag }}
+            {{ tire_form.price }}
+            {{ tire_form.price.errors }}
+          </div>
+          <div>
+            {{ tire_form.category.label_tag }}
+            {{ tire_form.category }}
+            {{ tire_form.category.errors }}
+          </div>
+          <div>
+            {{ tire_form.brand.label_tag }}
+            {{ tire_form.brand }}
+            {{ tire_form.brand.errors }}
+          </div>
+          <div>
+            {{ tire_form.stock_quantity.label_tag }}
+            {{ tire_form.stock_quantity }}
+            {{ tire_form.stock_quantity.errors }}
+          </div>
+          <div>
+            {{ tire_form.image.label_tag }}
+            {{ tire_form.image }}
+            {{ tire_form.image.errors }}
+          </div>
+          <div style="display:flex;flex-direction:column;gap:12px;grid-column:1 / -1;">
+            <div>
+              {{ tire_form.season.label_tag }}
+              {{ tire_form.season }}
+            </div>
+            <div class="tire-stud-row">
+              {{ tire_form.stud_type.label_tag }}
+              {{ tire_form.stud_type }}
+            </div>
+            <div>
+              {{ tire_form.width.label_tag }}
+              {{ tire_form.width }}
+            </div>
+            <div>
+              {{ tire_form.profile.label_tag }}
+              {{ tire_form.profile }}
+            </div>
+            <div>
+              {{ tire_form.diameter.label_tag }}
+              {{ tire_form.diameter }}
+            </div>
+            <div>
+              {{ tire_form.load_index.label_tag }}
+              {{ tire_form.load_index }}
+            </div>
+            <div>
+              {{ tire_form.speed_index.label_tag }}
+              {{ tire_form.speed_index }}
+            </div>
+            <div>
+              {{ tire_form.country_of_origin.label_tag }}
+              {{ tire_form.country_of_origin }}
+            </div>
+          </div>
+          <div style="grid-column:1 / -1;">
+            {{ tire_form.description.label_tag }}
+            {{ tire_form.description }}
+            {{ tire_form.description.errors }}
+          </div>
+          <div style="display:flex;gap:12px;grid-column:1 / -1;flex-wrap:wrap;">
+            <button class="btn btn-primary" data-mode="create" style="max-width:240px;">Добавить шины</button>
+            <button class="btn btn-success" data-mode="edit" style="display:none;max-width:240px;">Сохранить изменения</button>
+            <button type="button" class="btn btn-secondary" data-mode="cancel" style="display:none;max-width:200px;">Отменить</button>
+          </div>
+        </form>
+      {% elif product_tab == "rims" %}
+        <h2>Диски</h2>
+        <form id="rim-form" method="post" enctype="multipart/form-data" class="product-form-grid">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="create">
+          <input type="hidden" name="section" value="products">
+          <input type="hidden" name="product_tab" value="rims">
+          <input type="hidden" name="object_id" value="">
+          <div>
+            {{ rim_form.name.label_tag }}
+            {{ rim_form.name }}
+            {{ rim_form.name.errors }}
+          </div>
+          <div>
+            {{ rim_form.price.label_tag }}
+            {{ rim_form.price }}
+            {{ rim_form.price.errors }}
+          </div>
+          <div>
+            {{ rim_form.category.label_tag }}
+            {{ rim_form.category }}
+            {{ rim_form.category.errors }}
+          </div>
+          <div>
+            {{ rim_form.brand.label_tag }}
+            {{ rim_form.brand }}
+            {{ rim_form.brand.errors }}
+          </div>
+          <div>
+            {{ rim_form.stock_quantity.label_tag }}
+            {{ rim_form.stock_quantity }}
+            {{ rim_form.stock_quantity.errors }}
+          </div>
+          <div>
+            {{ rim_form.image.label_tag }}
+            {{ rim_form.image }}
+            {{ rim_form.image.errors }}
+          </div>
+          <div class="spec-grid" style="grid-column:1 / -1;">
+            <div>
+              {{ rim_form.diameter.label_tag }}
+              {{ rim_form.diameter }}
+            </div>
+            <div>
+              {{ rim_form.width.label_tag }}
+              {{ rim_form.width }}
+            </div>
+            <div>
+              {{ rim_form.pcd.label_tag }}
+              {{ rim_form.pcd }}
+            </div>
+            <div>
+              {{ rim_form.center_bore.label_tag }}
+              {{ rim_form.center_bore }}
+            </div>
+            <div>
+              {{ rim_form.offset.label_tag }}
+              {{ rim_form.offset }}
+            </div>
+            <div>
+              {{ rim_form.material.label_tag }}
+              {{ rim_form.material }}
+            </div>
+            <div>
+              {{ rim_form.color.label_tag }}
+            {{ rim_form.color }}
+          </div>
+          <div>
+            {{ rim_form.country_of_origin.label_tag }}
+            {{ rim_form.country_of_origin }}
+            </div>
+          </div>
+          <div style="grid-column:1 / -1;">
+            {{ rim_form.description.label_tag }}
+            {{ rim_form.description }}
+            {{ rim_form.description.errors }}
+          </div>
+          <div style="display:flex;gap:12px;grid-column:1 / -1;flex-wrap:wrap;">
+            <button class="btn btn-primary" data-mode="create" style="max-width:240px;">Добавить диски</button>
+            <button class="btn btn-success" data-mode="edit" style="display:none;max-width:240px;">Сохранить изменения</button>
+            <button type="button" class="btn btn-secondary" data-mode="cancel" style="display:none;max-width:200px;">Отменить</button>
+          </div>
+        </form>
+      {% elif product_tab == "batteries" %}
+        <h2>Аккумуляторы</h2>
+        <form id="battery-form" method="post" enctype="multipart/form-data" class="product-form-grid">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="create">
+          <input type="hidden" name="section" value="products">
+          <input type="hidden" name="product_tab" value="batteries">
+          <input type="hidden" name="object_id" value="">
+          <div>
+            {{ battery_form.name.label_tag }}
+            {{ battery_form.name }}
+            {{ battery_form.name.errors }}
+          </div>
+          <div>
+            {{ battery_form.price.label_tag }}
+            {{ battery_form.price }}
+            {{ battery_form.price.errors }}
+          </div>
+          <div>
+            {{ battery_form.category.label_tag }}
+            {{ battery_form.category }}
+            {{ battery_form.category.errors }}
+          </div>
+          <div>
+            {{ battery_form.brand.label_tag }}
+            {{ battery_form.brand }}
+            {{ battery_form.brand.errors }}
+          </div>
+          <div>
+            {{ battery_form.stock_quantity.label_tag }}
+            {{ battery_form.stock_quantity }}
+            {{ battery_form.stock_quantity.errors }}
+          </div>
+          <div>
+            {{ battery_form.image.label_tag }}
+            {{ battery_form.image }}
+            {{ battery_form.image.errors }}
+          </div>
+          <div class="spec-grid" style="grid-column:1 / -1;">
+            <div>
+              {{ battery_form.capacity_ah.label_tag }}
+              {{ battery_form.capacity_ah }}
+            </div>
+            <div>
+              {{ battery_form.cold_cranking_amps.label_tag }}
+              {{ battery_form.cold_cranking_amps }}
+            </div>
+            <div>
+              {{ battery_form.voltage.label_tag }}
+              {{ battery_form.voltage }}
+            </div>
+            <div>
+              {{ battery_form.polarity.label_tag }}
+              {{ battery_form.polarity }}
+            </div>
+            <div>
+              {{ battery_form.terminal_type.label_tag }}
+              {{ battery_form.terminal_type }}
+            </div>
+            <div>
+              {{ battery_form.length_mm.label_tag }}
+              {{ battery_form.length_mm }}
+            </div>
+            <div>
+              {{ battery_form.width_mm.label_tag }}
+              {{ battery_form.width_mm }}
+            </div>
+            <div>
+              {{ battery_form.height_mm.label_tag }}
+              {{ battery_form.height_mm }}
+            </div>
+            <div>
+              {{ battery_form.country_of_origin.label_tag }}
+              {{ battery_form.country_of_origin }}
+            </div>
+          </div>
+          <div style="grid-column:1 / -1;">
+            {{ battery_form.description.label_tag }}
+            {{ battery_form.description }}
+            {{ battery_form.description.errors }}
+          </div>
+          <div style="display:flex;gap:12px;grid-column:1 / -1;flex-wrap:wrap;">
+            <button class="btn btn-primary" data-mode="create" style="max-width:240px;">Добавить аккумулятор</button>
+            <button class="btn btn-success" data-mode="edit" style="display:none;max-width:240px;">Сохранить изменения</button>
+            <button type="button" class="btn btn-secondary" data-mode="cancel" style="display:none;max-width:200px;">Отменить</button>
+          </div>
         </form>
       {% endif %}
     </div>
@@ -1271,13 +1560,13 @@
         <table class="product-table">
           <thead><tr><th>Название</th><th>Категория</th><th>Бренд</th><th>Цена</th><th>Остаток</th><th></th></tr></thead>
           <tbody>
-            {% for product in auto_goods %}
-              <tr>
-                <td>{{ product.name }}</td>
-                <td>{{ product.category }}</td>
-                <td>{{ product.brand|default:"—" }}</td>
-                <td>{{ product.price }} ₽</td>
-                <td>{{ product.stock_quantity }}</td>
+                {% for product in auto_goods %}
+                  <tr class="product-row" data-tab="auto_goods" data-id="{{ product.id }}" data-name="{{ product.name|escape }}" data-price="{{ product.price }}" data-stock="{{ product.stock_quantity }}" data-category="{{ product.category.id }}" data-brand="{{ product.brand.id|default_if_none:'' }}" data-description="{{ product.description|default_if_none:''|escape }}">
+                    <td>{{ product.name }}</td>
+                    <td>{{ product.category }}</td>
+                    <td>{{ product.brand|default:"—" }}</td>
+                    <td>{{ product.price }} ₽</td>
+                    <td>{{ product.stock_quantity }}</td>
                 <td>
                   <form method="post">
                     {% csrf_token %}
@@ -1294,13 +1583,33 @@
             {% endfor %}
           </tbody>
         </table>
-      {% else %}
+      {% elif product_tab == "auto_parts" %}
         <h2>Список автозапчастей</h2>
         <table class="product-table">
           <thead><tr><th>Название</th><th>Категория</th><th>Бренд</th><th>Цена</th><th>Остаток</th><th></th></tr></thead>
           <tbody>
             {% for product in auto_parts %}
-              <tr>
+              <tr
+                class="product-row"
+                data-tab="auto_parts"
+                data-id="{{ product.id }}"
+                data-name="{{ product.name|escape }}"
+                data-price="{{ product.price }}"
+                data-stock="{{ product.stock_quantity }}"
+                data-category="{{ product.category.id }}"
+                data-brand="{{ product.brand.id|default_if_none:'' }}"
+                data-description="{{ product.description|default_if_none:''|escape }}"
+                data-oem="{{ product.auto_part_spec.oem_number|default_if_none:''|escape }}"
+                data-manufacturer_article="{{ product.auto_part_spec.manufacturer_article|default_if_none:''|escape }}"
+                data-compatibility="{{ product.auto_part_spec.compatibility|default_if_none:''|escape }}"
+                data-installation_side="{{ product.auto_part_spec.installation_side|default_if_none:''|escape }}"
+                data-material="{{ product.auto_part_spec.material|default_if_none:''|escape }}"
+                data-weight="{{ product.auto_part_spec.weight_kg|default_if_none:'' }}"
+                data-dimensions="{{ product.auto_part_spec.dimensions|default_if_none:''|escape }}"
+                data-country="{{ product.auto_part_spec.country_of_origin|default_if_none:''|escape }}"
+                data-warranty="{{ product.auto_part_spec.warranty|default_if_none:''|escape }}"
+                data-certificates="{{ product.auto_part_spec.certificates|default_if_none:''|escape }}"
+              >
                 <td>{{ product.name }}</td>
                 <td>{{ product.category }}</td>
                 <td>{{ product.brand|default:"—" }}</td>
@@ -1322,8 +1631,385 @@
             {% endfor %}
           </tbody>
         </table>
+      {% elif product_tab == "rims" %}
+        <h2>Список дисков</h2>
+        <table class="product-table">
+          <thead><tr><th>Название</th><th>Категория</th><th>Бренд</th><th>Цена</th><th>Остаток</th><th>PCD</th><th></th></tr></thead>
+          <tbody>
+            {% for product in rims %}
+              <tr
+                class="product-row"
+                data-tab="rims"
+                data-id="{{ product.id }}"
+                data-name="{{ product.name|escape }}"
+                data-price="{{ product.price }}"
+                data-stock="{{ product.stock_quantity }}"
+                data-category="{{ product.category.id }}"
+                data-brand="{{ product.brand.id|default_if_none:'' }}"
+                data-description="{{ product.description|default_if_none:''|escape }}"
+                data-diameter="{{ product.rim_spec.diameter|default_if_none:''|escape }}"
+                data-width="{{ product.rim_spec.width|default_if_none:''|escape }}"
+                data-pcd="{{ product.rim_spec.pcd|default_if_none:''|escape }}"
+                data-center_bore="{{ product.rim_spec.center_bore|default_if_none:''|escape }}"
+                data-offset="{{ product.rim_spec.offset|default_if_none:''|escape }}"
+                data-material="{{ product.rim_spec.material|default_if_none:''|escape }}"
+                data-color="{{ product.rim_spec.color|default_if_none:''|escape }}"
+                data-country="{{ product.rim_spec.country_of_origin|default_if_none:''|escape }}"
+              >
+                <td>{{ product.name }}</td>
+                <td>{{ product.category }}</td>
+                <td>{{ product.brand|default:"—" }}</td>
+                <td>{{ product.price }} ₽</td>
+                <td>{{ product.stock_quantity }}</td>
+                <td>{{ product.rim_spec.pcd|default:"—" }}</td>
+                <td>
+                  <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="delete">
+                    <input type="hidden" name="section" value="products">
+                    <input type="hidden" name="product_tab" value="rims">
+                    <input type="hidden" name="object_id" value="{{ product.id }}">
+                    <button class="btn btn-danger" onclick="return confirm('Удалить товар?');">Удалить</button>
+                  </form>
+                </td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="7">Диски не добавлены.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% elif product_tab == "batteries" %}
+        <h2>Список аккумуляторов</h2>
+        <table class="product-table">
+          <thead><tr><th>Название</th><th>Категория</th><th>Бренд</th><th>Цена</th><th>Остаток</th><th>Ёмкость</th><th></th></tr></thead>
+          <tbody>
+            {% for product in batteries %}
+              <tr
+                class="product-row"
+                data-tab="batteries"
+                data-id="{{ product.id }}"
+                data-name="{{ product.name|escape }}"
+                data-price="{{ product.price }}"
+                data-stock="{{ product.stock_quantity }}"
+                data-category="{{ product.category.id }}"
+                data-brand="{{ product.brand.id|default_if_none:'' }}"
+                data-description="{{ product.description|default_if_none:''|escape }}"
+                data-capacity_ah="{{ product.battery_spec.capacity_ah|default_if_none:''|escape }}"
+                data-cold_cranking_amps="{{ product.battery_spec.cold_cranking_amps|default_if_none:''|escape }}"
+                data-voltage="{{ product.battery_spec.voltage|default_if_none:''|escape }}"
+                data-polarity="{{ product.battery_spec.polarity|default_if_none:''|escape }}"
+                data-terminal_type="{{ product.battery_spec.terminal_type|default_if_none:''|escape }}"
+                data-length_mm="{{ product.battery_spec.length_mm|default_if_none:''|escape }}"
+                data-width_mm="{{ product.battery_spec.width_mm|default_if_none:''|escape }}"
+                data-height_mm="{{ product.battery_spec.height_mm|default_if_none:''|escape }}"
+                data-country="{{ product.battery_spec.country_of_origin|default_if_none:''|escape }}"
+              >
+                <td>{{ product.name }}</td>
+                <td>{{ product.category }}</td>
+                <td>{{ product.brand|default:"—" }}</td>
+                <td>{{ product.price }} ₽</td>
+                <td>{{ product.stock_quantity }}</td>
+                <td>{{ product.battery_spec.capacity_ah|default:"—" }}</td>
+                <td>
+                  <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="delete">
+                    <input type="hidden" name="section" value="products">
+                    <input type="hidden" name="product_tab" value="batteries">
+                    <input type="hidden" name="object_id" value="{{ product.id }}">
+                    <button class="btn btn-danger" onclick="return confirm('Удалить товар?');">Удалить</button>
+                  </form>
+                </td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="7">Аккумуляторы не добавлены.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <h2>Список шин</h2>
+        <table class="product-table">
+          <thead><tr><th>Название</th><th>Категория</th><th>Бренд</th><th>Цена</th><th>Остаток</th><th>Сезон</th><th></th></tr></thead>
+          <tbody>
+            {% for product in tires %}
+              <tr
+                class="product-row"
+                data-tab="tires"
+                data-id="{{ product.id }}"
+                data-name="{{ product.name|escape }}"
+                data-price="{{ product.price }}"
+                data-stock="{{ product.stock_quantity }}"
+                data-category="{{ product.category.id }}"
+                data-brand="{{ product.brand.id|default_if_none:'' }}"
+                data-description="{{ product.description|default_if_none:''|escape }}"
+                data-season="{{ product.tire_spec.season|default_if_none:'' }}"
+                data-stud_type="{{ product.tire_spec.stud_type|default_if_none:'' }}"
+                data-width="{{ product.tire_spec.width|default_if_none:''|escape }}"
+                data-profile="{{ product.tire_spec.profile|default_if_none:''|escape }}"
+                data-diameter="{{ product.tire_spec.diameter|default_if_none:''|escape }}"
+                data-load_index="{{ product.tire_spec.load_index|default_if_none:''|escape }}"
+                data-speed_index="{{ product.tire_spec.speed_index|default_if_none:''|escape }}"
+                data-country="{{ product.tire_spec.country_of_origin|default_if_none:''|escape }}"
+              >
+                <td>{{ product.name }}</td>
+                <td>{{ product.category }}</td>
+                <td>{{ product.brand|default:"—" }}</td>
+                <td>{{ product.price }} ₽</td>
+                <td>{{ product.stock_quantity }}</td>
+                <td>{{ product.tire_spec.get_season_display|default:"—" }}</td>
+                <td>
+                  <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="delete">
+                    <input type="hidden" name="section" value="products">
+                    <input type="hidden" name="product_tab" value="tires">
+                    <input type="hidden" name="object_id" value="{{ product.id }}">
+                    <button class="btn btn-danger" onclick="return confirm('Удалить товар?');">Удалить</button>
+                  </form>
+                </td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="7">Шины не добавлены.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
       {% endif %}
     </div>
+    <script>
+      (function () {
+        const forms = {
+          auto_parts: document.getElementById("auto-part-form"),
+          auto_goods: document.getElementById("auto-good-form"),
+          tires: document.getElementById("tire-form"),
+          rims: document.getElementById("rim-form"),
+          batteries: document.getElementById("battery-form"),
+        };
+
+        function setMode(form, mode) {
+          if (!form) return;
+          const action = form.querySelector('input[name="action"]');
+          const objectId = form.querySelector('input[name="object_id"]');
+          const createBtn = form.querySelector('[data-mode="create"]');
+          const editBtn = form.querySelector('[data-mode="edit"]');
+          const cancelBtn = form.querySelector('[data-mode="cancel"]');
+          if (mode === "edit") {
+            if (action) action.value = "update";
+            if (objectId) objectId.disabled = false;
+            if (editBtn) editBtn.style.display = "inline-block";
+            if (cancelBtn) cancelBtn.style.display = "inline-block";
+            if (createBtn) createBtn.style.display = "none";
+          } else {
+            if (action) action.value = "create";
+            if (objectId) {
+              objectId.value = "";
+              objectId.disabled = false;
+            }
+            if (editBtn) editBtn.style.display = "none";
+            if (cancelBtn) cancelBtn.style.display = "none";
+            if (createBtn) createBtn.style.display = "inline-block";
+          }
+        }
+
+        function fillForm(form, data) {
+          if (!form) return;
+          const setVal = (name, value) => {
+            const el = form.querySelector(`[name="${name}"]`);
+            if (el) el.value = value ?? "";
+          };
+          setVal("object_id", data.id);
+          setVal("name", data.name);
+          setVal("price", data.price);
+          setVal("stock_quantity", data.stock);
+          setVal("category", data.category);
+          setVal("brand", data.brand);
+          setVal("description", data.description);
+          // Доп. поля автозапчастей
+          setVal("oem_number", data.oem);
+          setVal("manufacturer_article", data.manufacturer_article);
+          setVal("compatibility", data.compatibility);
+          setVal("installation_side", data.installation_side);
+          setVal("material", data.material);
+          setVal("weight_kg", data.weight);
+          setVal("dimensions", data.dimensions);
+          setVal("country_of_origin", data.country);
+          setVal("warranty", data.warranty);
+          setVal("certificates", data.certificates);
+          setVal("season", data.season);
+          setVal("stud_type", data.stud_type);
+          setVal("width", data.width);
+          setVal("profile", data.profile);
+          setVal("diameter", data.diameter);
+          setVal("load_index", data.load_index);
+          setVal("speed_index", data.speed_index);
+          setVal("pcd", data.pcd);
+          setVal("center_bore", data.center_bore);
+          setVal("offset", data.offset);
+          setVal("material", data.material);
+          setVal("color", data.color);
+          // Аккумуляторы
+          setVal("capacity_ah", data.capacity_ah);
+          setVal("cold_cranking_amps", data.cold_cranking_amps);
+          setVal("voltage", data.voltage);
+          setVal("polarity", data.polarity);
+          setVal("terminal_type", data.terminal_type);
+          setVal("length_mm", data.length_mm);
+          setVal("width_mm", data.width_mm);
+          setVal("height_mm", data.height_mm);
+        }
+
+        document.querySelectorAll(".product-row").forEach((row) => {
+          row.addEventListener("click", () => {
+            const form = forms[row.dataset.tab];
+            if (!form) return;
+            setMode(form, "edit");
+            fillForm(form, {
+              id: row.dataset.id,
+              name: row.dataset.name,
+              price: row.dataset.price,
+              stock: row.dataset.stock,
+              category: row.dataset.category,
+              brand: row.dataset.brand,
+              description: row.dataset.description,
+              oem: row.dataset.oem,
+              manufacturer_article: row.dataset.manufacturer_article,
+              compatibility: row.dataset.compatibility,
+              installation_side: row.dataset.installation_side,
+              material: row.dataset.material,
+              weight: row.dataset.weight,
+              dimensions: row.dataset.dimensions,
+              country: row.dataset.country,
+              warranty: row.dataset.warranty,
+              certificates: row.dataset.certificates,
+              season: row.dataset.season,
+              stud_type: row.dataset.stud_type,
+              width: row.dataset.width,
+              profile: row.dataset.profile,
+              diameter: row.dataset.diameter,
+              load_index: row.dataset.load_index,
+              speed_index: row.dataset.speed_index,
+              pcd: row.dataset.pcd,
+              center_bore: row.dataset.center_bore,
+              offset: row.dataset.offset,
+              material: row.dataset.material,
+              color: row.dataset.color,
+              capacity_ah: row.dataset.capacity_ah,
+              cold_cranking_amps: row.dataset.cold_cranking_amps,
+              voltage: row.dataset.voltage,
+              polarity: row.dataset.polarity,
+              terminal_type: row.dataset.terminal_type,
+              length_mm: row.dataset.length_mm,
+              width_mm: row.dataset.width_mm,
+              height_mm: row.dataset.height_mm,
+            });
+            form.scrollIntoView({ behavior: "smooth", block: "center" });
+            toggleTireStud(form);
+          });
+        });
+
+        Object.values(forms).forEach((form) => {
+          if (!form) return;
+          const cancelBtn = form.querySelector('[data-mode="cancel"]');
+          if (cancelBtn) {
+            cancelBtn.addEventListener("click", () => {
+              form.reset();
+              setMode(form, "create");
+              toggleTireStud(form);
+            });
+          }
+          const seasonField = form.querySelector('[name="season"]');
+          if (seasonField) {
+            seasonField.addEventListener("change", () => toggleTireStud(form));
+          }
+        });
+
+        function toggleTireStud(form) {
+          const seasonField = form.querySelector('[name="season"]');
+          const studRow = form.querySelector(".tire-stud-row");
+          const studField = form.querySelector('[name="stud_type"]');
+          if (!seasonField || !studRow || !studField) return;
+          const isWinter = seasonField.value === "winter";
+          studRow.style.display = isWinter ? "block" : "none";
+          if (!isWinter) {
+            studField.value = "none";
+          }
+        }
+
+        // initialize stud visibility
+        Object.values(forms).forEach((form) => toggleTireStud(form));
+      })();
+    </script>
+    <script>
+      // Быстрые переходы по вкладкам панели: цифра с модификатором (Alt / Cmd / Ctrl / Shift)
+      (function () {
+        const shortcuts = {
+          "1": "overview",
+          "2": "categories",
+          "3": "brands",
+          "4": "cars",
+          "5": "products",
+          "6": "orders",
+          "7": "users",
+          "8": "pickups",
+          "9": "reports",
+        };
+
+        const shiftedSymbols = {
+          "!": "1",
+          "@": "2",
+          "#": "3",
+          "$": "4",
+          "%": "5",
+          "^": "6",
+          "&": "7",
+          "*": "8",
+          "(": "9",
+        };
+
+        function navigateTo(section) {
+          if (!section) return;
+          const url = new URL(window.location.href);
+          url.searchParams.set("section", section);
+          if (section !== "categories") url.searchParams.delete("cat_tab");
+          if (section !== "products") url.searchParams.delete("product_tab");
+          if (section !== "reports") {
+            url.searchParams.delete("report_tab");
+            url.searchParams.delete("analytics_range");
+          }
+          window.location.href = url.toString();
+        }
+
+        window.addEventListener("keydown", (e) => {
+          // Требуем хотя бы один модификатор, чтобы не мешать обычному вводу.
+          if (!(e.altKey || e.metaKey || e.ctrlKey || e.shiftKey)) return;
+          const tag = (e.target.tagName || "").toLowerCase();
+          if (["input", "textarea", "select"].includes(tag) || e.target.isContentEditable) return;
+          let key = e.key;
+          if (!shortcuts[key] && shiftedSymbols[key]) {
+            key = shiftedSymbols[key];
+          }
+          const section = shortcuts[key];
+          if (!section) return;
+          e.preventDefault();
+          navigateTo(section);
+        }, true);
+
+        // Alt/Option + стрелки для перехода по соседним вкладкам
+        window.addEventListener("keydown", (e) => {
+          if (!e.altKey || e.metaKey || e.ctrlKey || e.shiftKey) return;
+          if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+          const tag = (e.target.tagName || "").toLowerCase();
+          if (["input", "textarea", "select"].includes(tag) || e.target.isContentEditable) return;
+          const links = Array.from(document.querySelectorAll(".admin-nav a"));
+          if (!links.length) return;
+          let activeIdx = links.findIndex((a) => a.classList.contains("active"));
+          if (activeIdx === -1) activeIdx = 0;
+          const delta = e.key === "ArrowRight" ? 1 : -1;
+          const nextIdx = (activeIdx + delta + links.length) % links.length;
+          e.preventDefault();
+          window.location.href = links[nextIdx].href;
+        }, true);
+      })();
+    </script>
 
   {% elif section == "orders" %}
     <div class="panel">

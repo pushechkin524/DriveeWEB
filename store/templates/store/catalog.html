@@ -5,25 +5,96 @@
 <style>
   .catalog-container {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
     gap: 24px;
     padding: 30px 40px;
     background-color: #f6f7fb;
   }
 
-  .product-card {
+  .catalog-rims-layout {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    gap: 24px;
+    padding: 30px 40px;
+    background-color: #f6f7fb;
+  }
+
+  @media (max-width: 900px) {
+    .catalog-rims-layout {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .filter-card {
     background: #fff;
     border-radius: 16px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    padding: 16px;
+    box-shadow: 0 6px 14px rgba(0,0,0,0.06);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .filter-card h3 {
+    margin: 0 0 6px;
+    font-size: 1.05rem;
+  }
+
+  .filter-card label {
+    font-size: 0.9rem;
+    color: #4b5563;
+  }
+
+  .filter-card select {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid #d1d5db;
+    border-radius: 10px;
+    background: #f9fafb;
+  }
+
+  .filter-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 4px;
+  }
+
+  .filter-actions button,
+  .filter-actions a {
+    flex: 1;
+    text-align: center;
+    border-radius: 10px;
+    padding: 10px 12px;
+    border: none;
+    cursor: pointer;
+    text-decoration: none;
+    font-weight: 600;
+  }
+
+  .filter-apply {
+    background: #2563eb;
+    color: #fff;
+  }
+
+  .filter-reset {
+    background: #e5e7eb;
+    color: #111;
+  }
+
+  .product-card {
+    background: linear-gradient(145deg, #ffffff, #f8fafc);
+    border-radius: 18px;
+    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.12);
+    border: 1px solid #e5e7eb;
     overflow: hidden;
     display: flex;
     flex-direction: column;
-    transition: all 0.25s ease;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
   }
 
   .product-card:hover {
     transform: translateY(-6px);
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 16px 40px rgba(15, 23, 42, 0.16);
   }
 
   .product-link {
@@ -34,11 +105,13 @@
 
   .product-img {
     width: 100%;
-    height: 200px;
-    border-top-left-radius: 16px;
-    border-top-right-radius: 16px;
-    background-color: #f9f9f9;
+    height: 220px;
+    border-top-left-radius: 18px;
+    border-top-right-radius: 18px;
+    background: #f5f7fb;
     display: block;
+    object-fit: contain;
+    object-position: center;
   }
 
   .product-img--placeholder {
@@ -57,8 +130,11 @@
   }
 
   .product-info {
-    padding: 14px 16px;
+    padding: 14px 16px 0;
     flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
   }
 
   .product-brand {
@@ -85,10 +161,18 @@
   }
 
   .product-price {
-    font-size: 17px;
-    font-weight: bold;
-    color: #000;
-    margin-bottom: 12px;
+    font-size: 18px;
+    font-weight: 700;
+    color: #111827;
+  }
+
+  .product-specs {
+    font-size: 13px;
+    color: #4b5563;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin: 6px 0 10px;
   }
 
   .product-stock {
@@ -106,6 +190,7 @@
     display: flex;
     flex-direction: column;
     gap: 10px;
+    padding: 0 16px 16px;
   }
 
   .product-form {
@@ -135,26 +220,46 @@
     justify-content: center;
     align-items: center;
     gap: 6px;
-    background-color: #2563eb;
+    background: linear-gradient(120deg, #2563eb, #9333ea);
     color: #fff;
     text-align: center;
-    padding: 8px 14px;
-    border-radius: 8px;
-    font-weight: 500;
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-weight: 600;
     font-size: 15px;
     text-decoration: none;
-    transition: background 0.2s ease;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
     border: none;
     cursor: pointer;
+    box-shadow: 0 10px 20px rgba(99, 102, 241, 0.18);
   }
 
   .product-btn:hover {
-    background-color: #1d4ed8;
+    transform: translateY(-2px);
+    box-shadow: 0 14px 26px rgba(99, 102, 241, 0.25);
   }
 
   .product-btn--ghost {
     background: #e5e7eb;
     color: #1f2937;
+  }
+
+  .favorite-btn {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 50%;
+    width: 34px;
+    height: 34px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 6px 12px rgba(0,0,0,0.08);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  .favorite-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 18px rgba(0,0,0,0.12);
   }
 </style>
 
@@ -165,58 +270,328 @@
   <p style="text-align:center; color:#6b7280;">Отображаются товары раздела «{{ selected_main_category_label }}».</p>
 {% endif %}
 
-<div class="catalog-container">
-  {% for product in products %}
-  <div class="product-card">
-    <a href="{% url 'product_detail' product.id %}" class="product-link">
-      {% if product.image %}
-        <img src="{{ product.image.url }}" alt="{{ product.name }}" class="product-img" loading="lazy">
-      {% else %}
-        <div class="product-img product-img--placeholder">
-          <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <rect x="8" y="18" width="48" height="34" rx="4" stroke="currentColor" stroke-width="2"/>
-            <path d="M20 26L24 20H40L44 26" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-            <circle cx="32" cy="37" r="10" stroke="currentColor" stroke-width="2"/>
-            <circle cx="32" cy="37" r="4" fill="currentColor"/>
-          </svg>
-          <span>Нет фото</span>
+{% if is_rims %}
+  <div class="catalog-rims-layout">
+    <div>
+      <form class="filter-card" method="get">
+        {% if selected_main_category %}<input type="hidden" name="main_category" value="{{ selected_main_category }}">{% endif %}
+        {% if selected_subcategory %}<input type="hidden" name="subcategory" value="{{ selected_subcategory.slug }}">{% endif %}
+        <h3>Фильтры дисков</h3>
+        <div>
+          <label>Бренд</label>
+          <select name="brand">
+            <option value="">Все</option>
+            {% for b in rims_filters.brands %}
+              <option value="{{ b.id }}" {% if rims_selected.brand == b.id|stringformat:"s" %}selected{% endif %}>{{ b.name }}</option>
+            {% endfor %}
+          </select>
         </div>
-      {% endif %}
-
-      <div class="product-info">
-        {% if product.brand %}
-          <div class="product-brand"><a href="{% url 'brand_detail' product.brand_id %}">{{ product.brand.name }}</a></div>
-        {% endif %}
-        <div class="product-name">{{ product.name }}</div>
-        <div class="product-price">{{ product.price }} ₽</div>
-        <div class="product-stock {% if product.stock_quantity <= 0 %}out{% endif %}">
-          {% if product.stock_quantity > 0 %}
-            В наличии: {{ product.stock_quantity }} шт.
-          {% else %}
-            Нет в наличии
-          {% endif %}
+        <div>
+          <label>Диаметр (R)</label>
+          <select name="diameter">
+            <option value="">Все</option>
+            {% for v in rims_filters.diameters %}
+              <option value="{{ v }}" {% if rims_selected.diameter == v %}selected{% endif %}>{{ v }}</option>
+            {% endfor %}
+          </select>
         </div>
-      </div>
-    </a>
-    <div class="product-actions" style="padding: 0 16px 16px;">
-      {% if user.is_authenticated %}
-        {% if product.stock_quantity > 0 %}
-          <form class="product-form" action="{% url 'add_to_cart' product.id %}" method="post">
-            {% csrf_token %}
-            <input type="number" name="quantity" min="1" max="{{ product.stock_quantity }}" value="1" aria-label="Количество">
-            <input type="hidden" name="next" value="{{ request.get_full_path }}">
-            <button type="submit" class="product-btn">🛒 Добавить</button>
-          </form>
-        {% else %}
-          <button type="button" class="product-btn" disabled>Нет в наличии</button>
-        {% endif %}
-      {% else %}
-        <a href="{% url 'login' %}?next={% url 'catalog' %}" class="product-btn product-btn--ghost">Войдите, чтобы добавить</a>
-      {% endif %}
+        <div>
+          <label>Ширина обода</label>
+          <select name="width">
+            <option value="">Все</option>т
+            {% for v in rims_filters.widths %}
+              <option value="{{ v }}" {% if rims_selected.width == v %}selected{% endif %}>{{ v }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label>PCD</label>
+          <select name="pcd">
+            <option value="">Все</option>
+            {% for v in rims_filters.pcds %}
+              <option value="{{ v }}" {% if rims_selected.pcd == v %}selected{% endif %}>{{ v }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label>Вылет (ET)</label>
+          <select name="offset">
+            <option value="">Все</option>
+            {% for v in rims_filters.offsets %}
+              <option value="{{ v }}" {% if rims_selected.offset == v %}selected{% endif %}>{{ v }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label>Центральное отверстие</label>
+          <select name="center_bore">
+            <option value="">Все</option>
+            {% for v in rims_filters.center_bores %}
+              <option value="{{ v }}" {% if rims_selected.center_bore == v %}selected{% endif %}>{{ v }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label>Материал</label>
+          <select name="material">
+            <option value="">Все</option>
+            {% for v in rims_filters.materials %}
+              <option value="{{ v }}" {% if rims_selected.material == v %}selected{% endif %}>{{ v }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label>Цвет</label>
+          <select name="color">
+            <option value="">Все</option>
+            {% for v in rims_filters.colors %}
+              <option value="{{ v }}" {% if rims_selected.color == v %}selected{% endif %}>{{ v }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="filter-actions">
+          <button type="submit" class="filter-apply">Применить</button>
+          <a class="filter-reset" href="{% url 'catalog' %}?{% if selected_main_category %}main_category={{ selected_main_category }}{% endif %}">Сбросить</a>
+        </div>
+      </form>
+    </div>
+    <div class="catalog-container">
+      {% include "store/partials/catalog_cards.html" with products=products request=request user=user %}
     </div>
   </div>
-  {% empty %}
-    <p>Нет товаров</p>
-  {% endfor %}
-</div>
+{% elif is_tires %}
+  <div class="catalog-rims-layout">
+    <div>
+      <form class="filter-card" method="get">
+        {% if selected_main_category %}<input type="hidden" name="main_category" value="{{ selected_main_category }}">{% endif %}
+        {% if selected_subcategory %}<input type="hidden" name="subcategory" value="{{ selected_subcategory.slug }}">{% endif %}
+        <h3>Фильтры шин</h3>
+        <div>
+          <label>Бренд</label>
+          <select name="brand">
+            <option value="">Все</option>
+            {% for b in tires_filters.brands %}
+              <option value="{{ b.id }}" {% if tires_selected.brand == b.id|stringformat:"s" %}selected{% endif %}>{{ b.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label>Сезон</label>
+          <select name="season">
+            <option value="">Все</option>
+            {% for value,label in tires_filters.seasons %}
+              <option value="{{ value }}" {% if tires_selected.season == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label>Шипы / Липучка</label>
+          <select name="stud_type">
+            <option value="">Все</option>
+            {% for value,label in tires_filters.stud_types %}
+              <option value="{{ value }}" {% if tires_selected.stud_type == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label>Ширина</label>
+          <select name="width">
+            <option value="">Все</option>
+            {% for v in tires_filters.widths %}
+              <option value="{{ v }}" {% if tires_selected.width == v %}selected{% endif %}>{{ v }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label>Профиль</label>
+          <select name="profile">
+            <option value="">Все</option>
+            {% for v in tires_filters.profiles %}
+              <option value="{{ v }}" {% if tires_selected.profile == v %}selected{% endif %}>{{ v }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label>Диаметр (R)</label>
+          <select name="diameter">
+            <option value="">Все</option>
+            {% for v in tires_filters.diameters %}
+              <option value="{{ v }}" {% if tires_selected.diameter == v %}selected{% endif %}>{{ v }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label>Индекс нагрузки</label>
+          <select name="load_index">
+            <option value="">Все</option>
+            {% for v in tires_filters.load_indices %}
+              <option value="{{ v }}" {% if tires_selected.load_index == v %}selected{% endif %}>{{ v }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label>Индекс скорости</label>
+          <select name="speed_index">
+            <option value="">Все</option>
+            {% for v in tires_filters.speed_indices %}
+              <option value="{{ v }}" {% if tires_selected.speed_index == v %}selected{% endif %}>{{ v }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="filter-actions">
+          <button type="submit" class="filter-apply">Применить</button>
+          <a class="filter-reset" href="{% url 'catalog' %}?{% if selected_main_category %}main_category={{ selected_main_category }}{% endif %}">Сбросить</a>
+        </div>
+      </form>
+    </div>
+    <div class="catalog-container">
+      {% include "store/partials/catalog_cards.html" with products=products request=request user=user %}
+    </div>
+  </div>
+{% elif is_batteries %}
+  <div class="catalog-rims-layout">
+    <div>
+      <form class="filter-card" method="get">
+        {% if selected_main_category %}<input type="hidden" name="main_category" value="{{ selected_main_category }}">{% endif %}
+        {% if selected_subcategory %}<input type="hidden" name="subcategory" value="{{ selected_subcategory.slug }}">{% endif %}
+        <h3>Фильтры аккумуляторов</h3>
+        <div>
+          <label>Бренд</label>
+          <select name="brand">
+            <option value="">Все</option>
+            {% for b in batteries_filters.brands %}
+              <option value="{{ b.id }}" {% if batteries_selected.brand == b.id|stringformat:"s" %}selected{% endif %}>{{ b.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label>Ёмкость (А·ч)</label>
+          <select name="capacity_ah">
+            <option value="">Все</option>
+            {% for v in batteries_filters.capacities %}
+              <option value="{{ v }}" {% if batteries_selected.capacity_ah == v %}selected{% endif %}>{{ v }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label>Пусковой ток (A)</label>
+          <select name="cold_cranking_amps">
+            <option value="">Все</option>
+            {% for v in batteries_filters.ccas %}
+              <option value="{{ v }}" {% if batteries_selected.cold_cranking_amps == v %}selected{% endif %}>{{ v }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label>Напряжение (В)</label>
+          <select name="voltage">
+            <option value="">Все</option>
+            {% for v in batteries_filters.voltages %}
+              <option value="{{ v }}" {% if batteries_selected.voltage == v %}selected{% endif %}>{{ v }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label>Полярность</label>
+          <select name="polarity">
+            <option value="">Все</option>
+            {% for v in batteries_filters.polarities %}
+              <option value="{{ v }}" {% if batteries_selected.polarity == v %}selected{% endif %}>{{ v }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label>Тип клемм</label>
+          <select name="terminal_type">
+            <option value="">Все</option>
+            {% for v in batteries_filters.terminals %}
+              <option value="{{ v }}" {% if batteries_selected.terminal_type == v %}selected{% endif %}>{{ v }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label>Длина (мм)</label>
+          <select name="length_mm">
+            <option value="">Все</option>
+            {% for v in batteries_filters.lengths %}
+              <option value="{{ v }}" {% if batteries_selected.length_mm == v %}selected{% endif %}>{{ v }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label>Ширина (мм)</label>
+          <select name="width_mm">
+            <option value="">Все</option>
+            {% for v in batteries_filters.widths %}
+              <option value="{{ v }}" {% if batteries_selected.width_mm == v %}selected{% endif %}>{{ v }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label>Высота (мм)</label>
+          <select name="height_mm">
+            <option value="">Все</option>
+            {% for v in batteries_filters.heights %}
+              <option value="{{ v }}" {% if batteries_selected.height_mm == v %}selected{% endif %}>{{ v }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="filter-actions">
+          <button type="submit" class="filter-apply">Применить</button>
+          <a class="filter-reset" href="{% url 'catalog' %}?{% if selected_main_category %}main_category={{ selected_main_category }}{% endif %}">Сбросить</a>
+        </div>
+      </form>
+    </div>
+    <div class="catalog-container">
+      {% include "store/partials/catalog_cards.html" with products=products request=request user=user %}
+    </div>
+  </div>
+{% elif is_parts %}
+  <div class="catalog-rims-layout">
+    <div>
+      <form class="filter-card" method="get">
+        {% if selected_main_category %}<input type="hidden" name="main_category" value="{{ selected_main_category }}">{% endif %}
+        {% if selected_subcategory %}<input type="hidden" name="subcategory" value="{{ selected_subcategory.slug }}">{% endif %}
+        <h3>Фильтры запчастей</h3>
+        <div>
+          <label>Бренд</label>
+          <select name="brand">
+            <option value="">Все</option>
+            {% for b in parts_filters.brands %}
+              <option value="{{ b.id }}" {% if parts_selected.brand == b.id|stringformat:"s" %}selected{% endif %}>{{ b.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label>Совместимость (авто)</label>
+          <select name="car">
+            <option value="">Все</option>
+            {% for car in parts_filters.cars %}
+              <option value="{{ car.id }}" {% if parts_selected.car == car.id|stringformat:"s" %}selected{% endif %}>{{ car.make }} {{ car.model }} {{ car.generation }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label>Цена от</label>
+          <input type="number" step="0.01" name="price_min" value="{{ parts_selected.price_min }}">
+        </div>
+        <div>
+          <label>Цена до</label>
+          <input type="number" step="0.01" name="price_max" value="{{ parts_selected.price_max }}">
+        </div>
+        <div class="filter-actions">
+          <button type="submit" class="filter-apply">Применить</button>
+          <a class="filter-reset" href="{% url 'catalog' %}?{% if selected_main_category %}main_category={{ selected_main_category }}{% endif %}{% if selected_subcategory %}&subcategory={{ selected_subcategory.slug }}{% endif %}">Сбросить</a>
+        </div>
+      </form>
+    </div>
+    <div class="catalog-container">
+      {% include "store/partials/catalog_cards.html" with products=products request=request user=user %}
+    </div>
+  </div>
+{% else %}
+  <div class="catalog-container">
+    {% include "store/partials/catalog_cards.html" with products=products request=request user=user %}
+  </div>
+{% endif %}
 {% endblock %}

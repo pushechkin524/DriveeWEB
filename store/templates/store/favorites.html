@@ -2,17 +2,51 @@
 {% block title %}Избранное — Drivee{% endblock %}
 
 {% block content %}
-  <h1>Избранные товары</h1>
+<style>
+  .catalog-container {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 24px;
+    padding: 30px 0;
+    background-color: #f6f7fb;
+  }
+  .product-card {
+    background: linear-gradient(145deg, #ffffff, #f8fafc);
+    border-radius: 18px;
+    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.12);
+    border: 1px solid #e5e7eb;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  .product-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 16px 40px rgba(15, 23, 42, 0.16);
+  }
+  .product-link { color: inherit; text-decoration: none; display:block;}
+  .product-img { width:100%; height:220px; object-fit:contain; background:#f5f7fb;}
+  .product-img--placeholder { display:flex; align-items:center; justify-content:center; height:220px; color:#9ca3af; flex-direction:column; gap:8px;}
+  .product-info { padding:14px 16px 0; flex-grow:1; display:flex; flex-direction:column; gap:8px;}
+  .product-name { font-weight:500; font-size:15px; color:#222;}
+  .product-price { font-size:18px; font-weight:700; color:#111827;}
+  .product-brand { color:#777; font-size:13px;}
+  .product-stock { font-size:13px; font-weight:600; color:#059669;}
+  .product-stock.out { color:#ef4444;}
+  .product-actions { display:flex; flex-direction:column; gap:10px; padding:0 16px 16px;}
+  .product-form { display:flex; gap:8px; align-items:center;}
+  .product-form input { width:70px; border-radius:6px; border:1px solid #d1d5db; padding:6px 8px;}
+  .product-btn { display:inline-flex; justify-content:center; align-items:center; gap:6px; background:linear-gradient(120deg,#2563eb,#9333ea); color:#fff; padding:10px 14px; border-radius:10px; font-weight:600; border:none; cursor:pointer; }
+  .favorite-btn { background:#fff; border:1px solid #e5e7eb; border-radius:50%; width:34px; height:34px; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; box-shadow:0 6px 12px rgba(0,0,0,0.08); }
+</style>
 
-  {% if favorites %}
-    <ul>
-      {% for fav in favorites %}
-        <li>
-          {{ fav.product.name }} — {{ fav.product.price }} ₽
-        </li>
-      {% endfor %}
-    </ul>
-  {% else %}
-    <p>У вас пока нет избранных товаров.</p>
-  {% endif %}
+<h1>Избранные товары</h1>
+
+{% if products %}
+  <div class="catalog-container">
+    {% include "store/partials/catalog_cards.html" with products=products request=request user=user %}
+  </div>
+{% else %}
+  <p>У вас пока нет избранных товаров.</p>
+{% endif %}
 {% endblock %}

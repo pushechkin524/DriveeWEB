@@ -1,0 +1,215 @@
+{% extends "base.html" %}
+{% block title %}Поиск по OEM — Drivee{% endblock %}
+
+{% block content %}
+<style>
+  .search-page {
+    background: #f6f7fb;
+    padding: 30px;
+    border-radius: 20px;
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+  }
+  .search-form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .search-form input {
+    padding: 12px 14px;
+    border-radius: 12px;
+    border: 1px solid #d1d5db;
+    font-size: 1rem;
+  }
+  .search-form button {
+    align-self: flex-start;
+    background: linear-gradient(120deg, #2563eb, #9333ea);
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    padding: 10px 16px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .results-count {
+    color: #6b7280;
+    margin: 0 0 16px;
+  }
+  /* карточки как в каталоге */
+  .catalog-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 24px;
+    padding: 10px 0;
+  }
+  .product-card {
+    background: linear-gradient(145deg, #ffffff, #f8fafc);
+    border-radius: 18px;
+    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.12);
+    border: 1px solid #e5e7eb;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  .product-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 16px 40px rgba(15, 23, 42, 0.16);
+  }
+  .product-link {
+    color: inherit;
+    text-decoration: none;
+    display: block;
+  }
+  .product-img {
+    width: 100%;
+    height: 220px;
+    border-top-left-radius: 18px;
+    border-top-right-radius: 18px;
+    background: #f5f7fb;
+    display: block;
+    object-fit: contain;
+    object-position: center;
+  }
+  .product-img--placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    color: #9ca3af;
+  }
+  .product-img--placeholder svg {
+    width: 64px;
+    height: 64px;
+    opacity: 0.6;
+  }
+  .product-info {
+    padding: 14px 16px 0;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .product-brand {
+    color: #777;
+    font-size: 13px;
+    margin-bottom: 4px;
+  }
+  .product-name {
+    font-weight: 500;
+    font-size: 15px;
+    color: #222;
+    margin-bottom: 12px;
+    line-height: 1.4em;
+  }
+  .product-price {
+    font-size: 18px;
+    font-weight: 700;
+    color: #111827;
+  }
+  .product-stock {
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 10px;
+    color: #059669;
+  }
+  .product-stock.out {
+    color: #ef4444;
+  }
+  .product-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 0 16px 16px;
+  }
+  .product-form {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .product-form input[type="number"] {
+    width: 70px;
+  }
+  .product-btn[disabled] {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+  .product-form input {
+    width: 70px;
+    border-radius: 6px;
+    border: 1px solid #d1d5db;
+    padding: 6px 8px;
+  }
+  .product-btn {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    gap: 6px;
+    background: linear-gradient(120deg, #2563eb, #9333ea);
+    color: #fff;
+    text-align: center;
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 15px;
+    text-decoration: none;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 10px 20px rgba(99, 102, 241, 0.18);
+  }
+  .product-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 14px 26px rgba(99, 102, 241, 0.25);
+  }
+  .product-btn--ghost {
+    background: #e5e7eb;
+    color: #1f2937;
+  }
+  .product-specs {
+    font-size: 13px;
+    color: #4b5563;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin: 6px 0 10px;
+  }
+  .favorite-btn {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 50%;
+    width: 34px;
+    height: 34px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 6px 12px rgba(0,0,0,0.08);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  .favorite-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 18px rgba(0,0,0,0.12);
+  }
+</style>
+
+<div class="search-page">
+  <h1>Поиск по OEM номеру</h1>
+  <form class="search-form" method="get">
+    <input type="text" name="q" placeholder="Введите OEM / оригинальный номер" value="{{ query }}" autofocus>
+    <button type="submit">Найти</button>
+  </form>
+
+  {% if query %}
+    <p class="results-count">
+      Найдено: {{ results|length }} {{ results|length|pluralize:"товар,товара,товаров" }}
+    </p>
+    <div class="catalog-container">
+      {% include "store/partials/catalog_cards.html" with products=results request=request user=user %}
+    </div>
+  {% else %}
+    <p class="results-count">Введите OEM номер, чтобы увидеть совпадения.</p>
+  {% endif %}
+</div>
+{% endblock %}

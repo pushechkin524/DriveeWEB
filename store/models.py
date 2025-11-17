@@ -101,6 +101,9 @@ class Product(models.Model):
     class ProductType(models.TextChoices):
         AUTO_PART = ("auto_part", "Автозапчасть")
         AUTO_GOODS = ("auto_goods", "Автотовар")
+        TIRES = ("tires", "Шины")
+        RIMS = ("rims", "Диски")
+        BATTERIES = ("batteries", "Аккумуляторы")
 
     name = models.CharField(max_length=255, verbose_name="Название товара")
     description = models.TextField(blank=True, null=True, verbose_name="Описание")
@@ -185,6 +188,83 @@ class AutoGoodsSpecification(models.Model):
     class Meta:
         verbose_name = "Характеристики автотовара"
         verbose_name_plural = "Характеристики автотоваров"
+
+
+class TireSpecification(models.Model):
+    class Season(models.TextChoices):
+        SUMMER = ("summer", "Летняя")
+        WINTER = ("winter", "Зимняя")
+        ALL_SEASON = ("all_season", "Всесезонная")
+
+    class StudType(models.TextChoices):
+        STUDDED = ("studded", "Шипованная")
+        FRICTION = ("friction", "Липучка")
+        NONE = ("none", "Без шипов")
+
+    product = models.OneToOneField(
+        Product,
+        on_delete=models.CASCADE,
+        related_name="tire_spec",
+        verbose_name="Товар",
+    )
+    width = models.CharField(max_length=16, blank=True, verbose_name="Ширина (мм)")
+    profile = models.CharField(max_length=16, blank=True, verbose_name="Профиль (%)")
+    diameter = models.CharField(max_length=16, blank=True, verbose_name="Диаметр (R)")
+    load_index = models.CharField(max_length=64, blank=True, verbose_name="Индекс нагрузки")
+    speed_index = models.CharField(max_length=64, blank=True, verbose_name="Индекс скорости")
+    season = models.CharField(max_length=16, choices=Season.choices, default=Season.SUMMER, verbose_name="Сезон")
+    stud_type = models.CharField(max_length=16, choices=StudType.choices, default=StudType.NONE, verbose_name="Шипы / липучка")
+    country_of_origin = models.CharField(max_length=255, blank=True, verbose_name="Страна производства")
+
+    class Meta:
+        verbose_name = "Характеристики шины"
+        verbose_name_plural = "Характеристики шин"
+
+
+class RimSpecification(models.Model):
+    product = models.OneToOneField(
+        Product,
+        on_delete=models.CASCADE,
+        related_name="rim_spec",
+        verbose_name="Товар",
+    )
+    diameter = models.CharField(max_length=16, blank=True, verbose_name="Диаметр (R)")
+    width = models.CharField(max_length=16, blank=True, verbose_name="Ширина обода")
+    pcd = models.CharField(max_length=32, blank=True, verbose_name="PCD (кол-во×диаметр)")
+    center_bore = models.CharField(max_length=16, blank=True, verbose_name="Центральное отверстие")
+    offset = models.CharField(max_length=16, blank=True, verbose_name="Вылет (ET)")
+    material = models.CharField(max_length=64, blank=True, verbose_name="Материал")
+    color = models.CharField(max_length=64, blank=True, verbose_name="Цвет")
+    country_of_origin = models.CharField(max_length=255, blank=True, verbose_name="Страна производства")
+
+    class Meta:
+        verbose_name = "Характеристики диска"
+        verbose_name_plural = "Характеристики дисков"
+
+    def __str__(self):
+        return f"Характеристики {self.product.name}"
+
+
+class BatterySpecification(models.Model):
+    product = models.OneToOneField(
+        Product,
+        on_delete=models.CASCADE,
+        related_name="battery_spec",
+        verbose_name="Товар",
+    )
+    capacity_ah = models.CharField(max_length=32, blank=True, verbose_name="Ёмкость (А·ч)")
+    cold_cranking_amps = models.CharField(max_length=32, blank=True, verbose_name="Пусковой ток (A)")
+    voltage = models.CharField(max_length=16, blank=True, verbose_name="Напряжение (В)")
+    polarity = models.CharField(max_length=32, blank=True, verbose_name="Полярность")
+    terminal_type = models.CharField(max_length=64, blank=True, verbose_name="Тип клемм")
+    length_mm = models.CharField(max_length=16, blank=True, verbose_name="Длина (мм)")
+    width_mm = models.CharField(max_length=16, blank=True, verbose_name="Ширина (мм)")
+    height_mm = models.CharField(max_length=16, blank=True, verbose_name="Высота (мм)")
+    country_of_origin = models.CharField(max_length=255, blank=True, verbose_name="Страна производства")
+
+    class Meta:
+        verbose_name = "Характеристики аккумулятора"
+        verbose_name_plural = "Характеристики аккумуляторов"
 
     def __str__(self):
         return f"Характеристики {self.product.name}"

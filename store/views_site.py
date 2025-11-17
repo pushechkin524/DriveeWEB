@@ -5,6 +5,7 @@ from django.db import transaction
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.translation import gettext_lazy as _
+from django.db.models import Q
 
 from .forms import CheckoutForm, RegisterForm, UserVehicleForm, ProfileInfoForm
 from .models import (
@@ -16,8 +17,14 @@ from .models import (
     Favorite,
     PickupPoint,
     Product,
+    Car,
     OrderRequest,
     Brand,
+    RimSpecification,
+    TireSpecification,
+    Favorite,
+    Customer,
+    BatterySpecification,
     UserVehicle,
     UserProfile,
 )
@@ -95,6 +102,34 @@ def home(request):
     return render(request, "store/home.html", {"daily_deals": daily_deals})
 
 
+def search_view(request):
+    query = request.GET.get("q", "").strip()
+    results = []
+    favorites_ids = set()
+    if query:
+        if request.user.is_authenticated:
+            favorites_ids = set(
+                Favorite.objects.filter(customer__user=request.user).values_list("product_id", flat=True)
+            )
+        results = (
+            Product.objects.select_related("brand", "category", "auto_part_spec")
+            .filter(
+                product_type=Product.ProductType.AUTO_PART,
+                auto_part_spec__oem_number__icontains=query,
+                stock_quantity__gt=0,
+            )
+        )
+    return render(
+        request,
+        "store/search.html",
+        {
+            "query": query,
+            "results": results,
+            "favorites_ids": favorites_ids,
+        },
+    )
+
+
 def catalog(request):
     subcategory_slug = request.GET.get("subcategory")
     main_category = request.GET.get("main_category")
@@ -105,17 +140,222 @@ def catalog(request):
     )
     selected_subcategory = None
     selected_main_category_label = None
+    is_rims = False
+    is_tires = False
+    is_parts = False
+    is_batteries = False
     if subcategory_slug:
         selected_subcategory = get_object_or_404(Category, slug=subcategory_slug)
+        if selected_subcategory.main_category == Category.MainCategory.RIMS:
+            is_rims = True
+        if selected_subcategory.main_category == Category.MainCategory.TIRES:
+            is_tires = True
+        if selected_subcategory.main_category == Category.MainCategory.SPARE_PARTS:
+            is_parts = True
+        if selected_subcategory.main_category == Category.MainCategory.BATTERIES:
+            is_batteries = True
         products_qs = products_qs.filter(category=selected_subcategory)
     elif main_category:
         try:
             selected_main_category_label = Category.MainCategory(main_category).label
         except ValueError:
             raise Http404("Категория не найдена")
+        if main_category == Category.MainCategory.RIMS:
+            is_rims = True
+        if main_category == Category.MainCategory.TIRES:
+            is_tires = True
+        if main_category == Category.MainCategory.SPARE_PARTS:
+            is_parts = True
+        if main_category == Category.MainCategory.BATTERIES:
+            is_batteries = True
         products_qs = products_qs.filter(category__main_category=main_category)
 
+    brand_filter = ""
+    diameter_filter = ""
+    width_filter = ""
+    pcd_filter = ""
+    offset_filter = ""
+    cb_filter = ""
+    material_filter = ""
+    color_filter = ""
+    season_filter = ""
+    stud_filter = ""
+    profile_filter = ""
+    load_index_filter = ""
+    speed_index_filter = ""
+    capacity_filter = ""
+    cca_filter = ""
+    voltage_filter = ""
+    polarity_filter = ""
+    terminal_filter = ""
+    length_filter = ""
+    height_filter = ""
+
+    if is_rims:
+        products_qs = Product.objects.select_related("brand", "category", "rim_spec").filter(
+            product_type=Product.ProductType.RIMS,
+            stock_quantity__gt=0,
+        )
+        brand_filter = request.GET.get("brand") or ""
+        diameter_filter = request.GET.get("diameter") or ""
+        width_filter = request.GET.get("width") or ""
+        pcd_filter = request.GET.get("pcd") or ""
+        offset_filter = request.GET.get("offset") or ""
+        cb_filter = request.GET.get("center_bore") or ""
+        material_filter = request.GET.get("material") or ""
+        color_filter = request.GET.get("color") or ""
+
+        if brand_filter:
+            products_qs = products_qs.filter(brand_id=brand_filter)
+        if diameter_filter:
+            products_qs = products_qs.filter(rim_spec__diameter=diameter_filter)
+        if width_filter:
+            products_qs = products_qs.filter(rim_spec__width=width_filter)
+        if pcd_filter:
+            products_qs = products_qs.filter(rim_spec__pcd=pcd_filter)
+        if offset_filter:
+            products_qs = products_qs.filter(rim_spec__offset=offset_filter)
+        if cb_filter:
+            products_qs = products_qs.filter(rim_spec__center_bore=cb_filter)
+        if material_filter:
+            products_qs = products_qs.filter(rim_spec__material=material_filter)
+        if color_filter:
+            products_qs = products_qs.filter(rim_spec__color=color_filter)
+
+        filter_options = {
+            "brands": Brand.objects.order_by("name"),
+            "diameters": RimSpecification.objects.exclude(diameter="").values_list("diameter", flat=True).distinct().order_by("diameter"),
+            "widths": RimSpecification.objects.exclude(width="").values_list("width", flat=True).distinct().order_by("width"),
+            "pcds": RimSpecification.objects.exclude(pcd="").values_list("pcd", flat=True).distinct().order_by("pcd"),
+            "offsets": RimSpecification.objects.exclude(offset="").values_list("offset", flat=True).distinct().order_by("offset"),
+            "center_bores": RimSpecification.objects.exclude(center_bore="").values_list("center_bore", flat=True).distinct().order_by("center_bore"),
+            "materials": RimSpecification.objects.exclude(material="").values_list("material", flat=True).distinct().order_by("material"),
+            "colors": RimSpecification.objects.exclude(color="").values_list("color", flat=True).distinct().order_by("color"),
+        }
+    elif is_tires:
+        products_qs = Product.objects.select_related("brand", "category", "tire_spec").filter(
+            product_type=Product.ProductType.TIRES,
+            stock_quantity__gt=0,
+        )
+        brand_filter = request.GET.get("brand") or ""
+        season_filter = request.GET.get("season") or ""
+        stud_filter = request.GET.get("stud_type") or ""
+        width_filter = request.GET.get("width") or ""
+        profile_filter = request.GET.get("profile") or ""
+        diameter_filter = request.GET.get("diameter") or ""
+        load_index_filter = request.GET.get("load_index") or ""
+        speed_index_filter = request.GET.get("speed_index") or ""
+
+        if brand_filter:
+            products_qs = products_qs.filter(brand_id=brand_filter)
+        if season_filter:
+            products_qs = products_qs.filter(tire_spec__season=season_filter)
+        if stud_filter:
+            products_qs = products_qs.filter(tire_spec__stud_type=stud_filter)
+        if width_filter:
+            products_qs = products_qs.filter(tire_spec__width=width_filter)
+        if profile_filter:
+            products_qs = products_qs.filter(tire_spec__profile=profile_filter)
+        if diameter_filter:
+            products_qs = products_qs.filter(tire_spec__diameter=diameter_filter)
+        if load_index_filter:
+            products_qs = products_qs.filter(tire_spec__load_index=load_index_filter)
+        if speed_index_filter:
+            products_qs = products_qs.filter(tire_spec__speed_index=speed_index_filter)
+
+        filter_options = {
+            "brands": Brand.objects.order_by("name"),
+            "seasons": TireSpecification.Season.choices,
+            "stud_types": TireSpecification.StudType.choices,
+            "widths": TireSpecification.objects.exclude(width="").values_list("width", flat=True).distinct().order_by("width"),
+            "profiles": TireSpecification.objects.exclude(profile="").values_list("profile", flat=True).distinct().order_by("profile"),
+            "diameters": TireSpecification.objects.exclude(diameter="").values_list("diameter", flat=True).distinct().order_by("diameter"),
+            "load_indices": TireSpecification.objects.exclude(load_index="").values_list("load_index", flat=True).distinct().order_by("load_index"),
+            "speed_indices": TireSpecification.objects.exclude(speed_index="").values_list("speed_index", flat=True).distinct().order_by("speed_index"),
+        }
+    elif is_batteries:
+        products_qs = Product.objects.select_related("brand", "category", "battery_spec").filter(
+            product_type=Product.ProductType.BATTERIES,
+            stock_quantity__gt=0,
+        )
+        brand_filter = request.GET.get("brand") or ""
+        capacity_filter = request.GET.get("capacity_ah") or ""
+        cca_filter = request.GET.get("cold_cranking_amps") or ""
+        voltage_filter = request.GET.get("voltage") or ""
+        polarity_filter = request.GET.get("polarity") or ""
+        terminal_filter = request.GET.get("terminal_type") or ""
+        length_filter = request.GET.get("length_mm") or ""
+        width_filter = request.GET.get("width_mm") or ""
+        height_filter = request.GET.get("height_mm") or ""
+
+        if brand_filter:
+            products_qs = products_qs.filter(brand_id=brand_filter)
+        if capacity_filter:
+            products_qs = products_qs.filter(battery_spec__capacity_ah=capacity_filter)
+        if cca_filter:
+            products_qs = products_qs.filter(battery_spec__cold_cranking_amps=cca_filter)
+        if voltage_filter:
+            products_qs = products_qs.filter(battery_spec__voltage=voltage_filter)
+        if polarity_filter:
+            products_qs = products_qs.filter(battery_spec__polarity=polarity_filter)
+        if terminal_filter:
+            products_qs = products_qs.filter(battery_spec__terminal_type=terminal_filter)
+        if length_filter:
+            products_qs = products_qs.filter(battery_spec__length_mm=length_filter)
+        if width_filter:
+            products_qs = products_qs.filter(battery_spec__width_mm=width_filter)
+        if height_filter:
+            products_qs = products_qs.filter(battery_spec__height_mm=height_filter)
+
+        filter_options = {
+            "brands": Brand.objects.order_by("name"),
+            "capacities": BatterySpecification.objects.exclude(capacity_ah="").values_list("capacity_ah", flat=True).distinct().order_by("capacity_ah"),
+            "ccas": BatterySpecification.objects.exclude(cold_cranking_amps="").values_list("cold_cranking_amps", flat=True).distinct().order_by("cold_cranking_amps"),
+            "voltages": BatterySpecification.objects.exclude(voltage="").values_list("voltage", flat=True).distinct().order_by("voltage"),
+            "polarities": BatterySpecification.objects.exclude(polarity="").values_list("polarity", flat=True).distinct().order_by("polarity"),
+            "terminals": BatterySpecification.objects.exclude(terminal_type="").values_list("terminal_type", flat=True).distinct().order_by("terminal_type"),
+            "lengths": BatterySpecification.objects.exclude(length_mm="").values_list("length_mm", flat=True).distinct().order_by("length_mm"),
+            "widths": BatterySpecification.objects.exclude(width_mm="").values_list("width_mm", flat=True).distinct().order_by("width_mm"),
+            "heights": BatterySpecification.objects.exclude(height_mm="").values_list("height_mm", flat=True).distinct().order_by("height_mm"),
+        }
+    elif is_parts:
+        products_qs = Product.objects.select_related("brand", "category").prefetch_related("compatible_cars").filter(
+            product_type=Product.ProductType.AUTO_PART,
+            stock_quantity__gt=0,
+        )
+        brand_filter = request.GET.get("brand") or ""
+        car_filter = request.GET.get("car") or ""
+        price_min = request.GET.get("price_min") or ""
+        price_max = request.GET.get("price_max") or ""
+
+        if brand_filter:
+            products_qs = products_qs.filter(brand_id=brand_filter)
+        if car_filter:
+            products_qs = products_qs.filter(compatible_cars__id=car_filter)
+        if price_min:
+            try:
+                products_qs = products_qs.filter(price__gte=float(price_min))
+            except ValueError:
+                pass
+        if price_max:
+            try:
+                products_qs = products_qs.filter(price__lte=float(price_max))
+            except ValueError:
+                pass
+
+        filter_options = {
+            "brands": Brand.objects.order_by("name"),
+            "cars": Car.objects.order_by("make", "model", "generation"),
+        }
+    else:
+        filter_options = {}
+
     products = products_qs
+    favorites_ids = set()
+    if request.user.is_authenticated:
+        favorites_ids = set(
+            Favorite.objects.filter(customer__user=request.user).values_list("product_id", flat=True)
+        )
     return render(
         request,
         "store/catalog.html",
@@ -124,6 +364,52 @@ def catalog(request):
             "selected_subcategory": selected_subcategory,
             "selected_main_category": main_category,
             "selected_main_category_label": selected_main_category_label,
+            "is_rims": is_rims,
+            "is_tires": is_tires,
+            "is_parts": is_parts,
+            "is_batteries": is_batteries,
+            "rims_filters": filter_options if is_rims else {},
+            "rims_selected": {
+                "brand": brand_filter if is_rims else "",
+                "diameter": diameter_filter if is_rims else "",
+                "width": width_filter if is_rims else "",
+                "pcd": pcd_filter if is_rims else "",
+                "offset": offset_filter if is_rims else "",
+                "center_bore": cb_filter if is_rims else "",
+                "material": material_filter if is_rims else "",
+                "color": color_filter if is_rims else "",
+            } if is_rims else {},
+            "tires_filters": filter_options if is_tires else {},
+            "tires_selected": {
+                "brand": brand_filter if is_tires else "",
+                "season": season_filter if is_tires else "",
+                "stud_type": stud_filter if is_tires else "",
+                "width": width_filter if is_tires else "",
+                "profile": profile_filter if is_tires else "",
+                "diameter": diameter_filter if is_tires else "",
+                "load_index": load_index_filter if is_tires else "",
+                "speed_index": speed_index_filter if is_tires else "",
+            } if is_tires else {},
+            "batteries_filters": filter_options if is_batteries else {},
+            "batteries_selected": {
+                "brand": brand_filter if is_batteries else "",
+                "capacity_ah": capacity_filter if is_batteries else "",
+                "cold_cranking_amps": cca_filter if is_batteries else "",
+                "voltage": voltage_filter if is_batteries else "",
+                "polarity": polarity_filter if is_batteries else "",
+                "terminal_type": terminal_filter if is_batteries else "",
+                "length_mm": length_filter if is_batteries else "",
+                "width_mm": width_filter if is_batteries else "",
+                "height_mm": height_filter if is_batteries else "",
+            } if is_batteries else {},
+            "parts_filters": filter_options if is_parts else {},
+            "parts_selected": {
+                "brand": brand_filter if is_parts else "",
+                "car": car_filter if is_parts else "",
+                "price_min": price_min if is_parts else "",
+                "price_max": price_max if is_parts else "",
+            } if is_parts else {},
+            "favorites_ids": favorites_ids,
         },
     )
 
@@ -133,7 +419,25 @@ def favorites(request):
     favorites_qs = Favorite.objects.select_related("product", "customer").filter(
         customer__user=request.user
     )
-    return render(request, "store/favorites.html", {"favorites": favorites_qs})
+    products = [f.product for f in favorites_qs]
+    fav_ids = {f.product_id for f in favorites_qs}
+    return render(request, "store/favorites.html", {"favorites": favorites_qs, "products": products, "favorites_ids": fav_ids})
+
+
+@login_required
+def toggle_favorite(request, product_id):
+    next_url = request.GET.get("next") or request.POST.get("next") or request.META.get("HTTP_REFERER") or "catalog"
+    product = get_object_or_404(Product, pk=product_id)
+    customer = Customer.objects.filter(user=request.user).first()
+    if not customer:
+        customer = Customer.objects.create(user=request.user, phone=request.user.email, address=None)
+    fav, created = Favorite.objects.get_or_create(customer=customer, product=product)
+    if not created:
+        fav.delete()
+        messages.info(request, "Товар удалён из избранного.")
+    else:
+        messages.success(request, "Товар добавлен в избранное.")
+    return redirect(next_url)
 
 
 def categories_view(request):
@@ -320,6 +624,7 @@ def add_to_cart(request, product_id):
 def product_detail(request, pk):
     product = get_object_or_404(
         Product.objects.select_related("brand", "category")
+        .select_related("tire_spec", "rim_spec", "battery_spec")
         .prefetch_related("compatible_cars", "auto_part_spec", "auto_goods_spec"),
         pk=pk,
     )

@@ -8,6 +8,9 @@ from store.models import (
     PickupPoint,
     AutoPartSpecification,
     AutoGoodsSpecification,
+    TireSpecification,
+    RimSpecification,
+    BatterySpecification,
     Brand,
     Car,
 )
@@ -150,6 +153,150 @@ class AutoGoodsProductForm(ProductBrandMixin):
                     "country_of_origin": self.cleaned_data.get("country_of_origin", ""),
                     "warranty": self.cleaned_data.get("warranty", ""),
                     "package_contents": self.cleaned_data.get("package_contents", ""),
+                },
+            )
+        return product
+
+
+class TireProductForm(ProductBrandMixin):
+    season = forms.ChoiceField(
+        label="Сезон",
+        choices=TireSpecification.Season.choices,
+    )
+    stud_type = forms.ChoiceField(
+        label="Шипы / Липучка",
+        choices=TireSpecification.StudType.choices,
+        required=False,
+    )
+    width = forms.CharField(label="Ширина (мм)", required=False)
+    profile = forms.CharField(label="Профиль (%)", required=False)
+    diameter = forms.CharField(label="Диаметр (R)", required=False)
+    load_index = forms.CharField(label="Индекс нагрузки", required=False)
+    speed_index = forms.CharField(label="Индекс скорости", required=False)
+    country_of_origin = forms.CharField(label="Страна производства", required=False)
+
+    class Meta:
+        model = Product
+        fields = ["name", "description", "price", "stock_quantity", "category", "brand", "image"]
+        labels = {
+            "name": "Название шины",
+            "description": "Описание",
+            "price": "Цена",
+            "stock_quantity": "Количество на складе",
+            "category": "Категория",
+            "brand": "Бренд",
+            "image": "Изображение",
+        }
+
+    def save(self, commit=True):
+        product = super().save(commit=False)
+        product.product_type = Product.ProductType.TIRES
+        if commit:
+            product.save()
+            self.save_m2m()
+            TireSpecification.objects.update_or_create(
+                product=product,
+                defaults={
+                    "season": self.cleaned_data.get("season") or TireSpecification.Season.SUMMER,
+                    "stud_type": self.cleaned_data.get("stud_type") or TireSpecification.StudType.NONE,
+                    "width": self.cleaned_data.get("width", ""),
+                    "profile": self.cleaned_data.get("profile", ""),
+                    "diameter": self.cleaned_data.get("diameter", ""),
+                    "load_index": self.cleaned_data.get("load_index", ""),
+                    "speed_index": self.cleaned_data.get("speed_index", ""),
+                    "country_of_origin": self.cleaned_data.get("country_of_origin", ""),
+                },
+            )
+        return product
+
+
+class RimProductForm(ProductBrandMixin):
+    diameter = forms.CharField(label="Диаметр (R)", required=False)
+    width = forms.CharField(label="Ширина обода", required=False)
+    pcd = forms.CharField(label="PCD (кол-во×диаметр)", required=False)
+    center_bore = forms.CharField(label="Центральное отверстие", required=False)
+    offset = forms.CharField(label="Вылет (ET)", required=False)
+    material = forms.CharField(label="Материал", required=False)
+    color = forms.CharField(label="Цвет", required=False)
+    country_of_origin = forms.CharField(label="Страна производства", required=False)
+
+    class Meta:
+        model = Product
+        fields = ["name", "description", "price", "stock_quantity", "category", "brand", "image"]
+        labels = {
+            "name": "Название диска",
+            "description": "Описание",
+            "price": "Цена",
+            "stock_quantity": "Количество на складе",
+            "category": "Категория",
+            "brand": "Бренд",
+            "image": "Изображение",
+        }
+
+    def save(self, commit=True):
+        product = super().save(commit=False)
+        product.product_type = Product.ProductType.RIMS
+        if commit:
+            product.save()
+            self.save_m2m()
+            RimSpecification.objects.update_or_create(
+                product=product,
+                defaults={
+                    "diameter": self.cleaned_data.get("diameter", ""),
+                    "width": self.cleaned_data.get("width", ""),
+                    "pcd": self.cleaned_data.get("pcd", ""),
+                    "center_bore": self.cleaned_data.get("center_bore", ""),
+                    "offset": self.cleaned_data.get("offset", ""),
+                    "material": self.cleaned_data.get("material", ""),
+                    "color": self.cleaned_data.get("color", ""),
+                    "country_of_origin": self.cleaned_data.get("country_of_origin", ""),
+                },
+            )
+        return product
+
+
+class BatteryProductForm(ProductBrandMixin):
+    capacity_ah = forms.CharField(label="Ёмкость (А·ч)", required=False)
+    cold_cranking_amps = forms.CharField(label="Пусковой ток (A)", required=False)
+    voltage = forms.CharField(label="Напряжение (В)", required=False)
+    polarity = forms.CharField(label="Полярность", required=False)
+    terminal_type = forms.CharField(label="Тип клемм", required=False)
+    length_mm = forms.CharField(label="Длина (мм)", required=False)
+    width_mm = forms.CharField(label="Ширина (мм)", required=False)
+    height_mm = forms.CharField(label="Высота (мм)", required=False)
+    country_of_origin = forms.CharField(label="Страна производства", required=False)
+
+    class Meta:
+        model = Product
+        fields = ["name", "description", "price", "stock_quantity", "category", "brand", "image"]
+        labels = {
+            "name": "Название аккумулятора",
+            "description": "Описание",
+            "price": "Цена",
+            "stock_quantity": "Количество на складе",
+            "category": "Категория",
+            "brand": "Бренд",
+            "image": "Изображение",
+        }
+
+    def save(self, commit=True):
+        product = super().save(commit=False)
+        product.product_type = Product.ProductType.BATTERIES
+        if commit:
+            product.save()
+            self.save_m2m()
+            BatterySpecification.objects.update_or_create(
+                product=product,
+                defaults={
+                    "capacity_ah": self.cleaned_data.get("capacity_ah", ""),
+                    "cold_cranking_amps": self.cleaned_data.get("cold_cranking_amps", ""),
+                    "voltage": self.cleaned_data.get("voltage", ""),
+                    "polarity": self.cleaned_data.get("polarity", ""),
+                    "terminal_type": self.cleaned_data.get("terminal_type", ""),
+                    "length_mm": self.cleaned_data.get("length_mm", ""),
+                    "width_mm": self.cleaned_data.get("width_mm", ""),
+                    "height_mm": self.cleaned_data.get("height_mm", ""),
+                    "country_of_origin": self.cleaned_data.get("country_of_origin", ""),
                 },
             )
         return product

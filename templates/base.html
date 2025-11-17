@@ -132,20 +132,20 @@
     }
 
     main {
-      max-width: 1100px;
+      max-width: 1400px;
       margin: 40px auto;
-      padding: 0 20px;
+      padding: 0 28px;
     }
 
-    footer {
-      text-align: center;
-      padding: 20px;
-      background: #111827;
-      color: #9ca3af;
-      margin-top: 60px;
-    }
+  footer {
+    text-align: center;
+    padding: 20px;
+    background: #111827;
+    color: #9ca3af;
+    margin-top: 60px;
+  }
 
-    .messages {
+  .messages {
       position: fixed;
       top: 80px;
       left: 50%;
@@ -179,11 +179,86 @@
       border-color: rgba(14, 165, 233, 0.35);
     }
 
-    .message-error {
-      background: #fee2e2;
-      color: #b91c1c;
-      border-color: rgba(248, 113, 113, 0.4);
-    }
+  .message-error {
+    background: #fee2e2;
+    color: #b91c1c;
+    border-color: rgba(248, 113, 113, 0.4);
+  }
+
+  /* Hotkey overlay */
+  .hotkey-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.65);
+    backdrop-filter: blur(4px);
+    z-index: 2000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+
+  .hotkey-card {
+    max-width: 680px;
+    width: 100%;
+    background: #0b1220;
+    color: #f1f5f9;
+    border-radius: 18px;
+    padding: 20px 24px;
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+  }
+
+  .hotkey-card h3 {
+    margin: 0 0 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 1.1rem;
+  }
+
+  .hotkey-close {
+    background: #1f2937;
+    color: #e5e7eb;
+    border: 1px solid #334155;
+    border-radius: 10px;
+    padding: 6px 12px;
+    cursor: pointer;
+  }
+
+  .hotkey-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 10px;
+  }
+
+  .hotkey-item {
+    background: #111827;
+    border: 1px solid #1f2937;
+    border-radius: 12px;
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .hotkey-title {
+    font-weight: 700;
+  }
+
+  .hotkey-keys {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .hotkey-pill {
+    background: #1f2937;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    padding: 4px 8px;
+    font-size: 0.9rem;
+    color: #cbd5e1;
+  }
   </style>
 </head>
 <body>
@@ -191,6 +266,7 @@
     <div class="header-left">
       <a href="{% url 'home' %}" class="logo">Drivee</a>
       <nav>
+        <a href="{% url 'search' %}">Поиск</a>
         <a href="{% url 'catalog' %}">Каталог</a>
         <a href="{% url 'favorites' %}">Избранное</a>
         <a href="{% url 'categories' %}">Категории</a>
@@ -213,7 +289,7 @@
         <a href="{% url 'profile' %}" class="user-name">
           {{ user.first_name|default:user.email|default:"Пользователь" }}
         </a>
-        <form action="{% url 'logout' %}" method="post" style="display:inline;">
+        <form id="quick-logout-form" action="{% url 'logout' %}" method="post" style="display:inline;">
           {% csrf_token %}
           <button type="submit" class="btn-logout">Выйти</button>
         </form>
@@ -239,5 +315,162 @@
   <footer>
     © 2025 Drivee. Все права защищены.
   </footer>
+  <div class="hotkey-overlay" id="hotkey-overlay">
+    <div class="hotkey-card">
+      <h3>
+        Горячие клавиши (Cmd/Ctrl + …)
+        <button class="hotkey-close" type="button" id="hotkey-close">Закрыть</button>
+      </h3>
+      <div class="hotkey-list">
+        <div class="hotkey-item">
+          <div class="hotkey-title">Профиль</div>
+          <div class="hotkey-keys">
+            <span class="hotkey-pill">Cmd/Ctrl</span>
+            <span class="hotkey-pill">Shift</span>
+            <span class="hotkey-pill">P</span>
+          </div>
+        </div>
+        <div class="hotkey-item">
+          <div class="hotkey-title">Каталог</div>
+          <div class="hotkey-keys">
+            <span class="hotkey-pill">Cmd/Ctrl</span>
+            <span class="hotkey-pill">Shift</span>
+            <span class="hotkey-pill">O</span>
+          </div>
+        </div>
+        <div class="hotkey-item">
+          <div class="hotkey-title">Категории</div>
+          <div class="hotkey-keys">
+            <span class="hotkey-pill">Cmd/Ctrl</span>
+            <span class="hotkey-pill">Shift</span>
+            <span class="hotkey-pill">U</span>
+          </div>
+        </div>
+        <div class="hotkey-item">
+          <div class="hotkey-title">Выйти</div>
+          <div class="hotkey-keys">
+            <span class="hotkey-pill">Cmd/Ctrl</span>
+            <span class="hotkey-pill">Shift</span>
+            <span class="hotkey-pill">Y</span>
+          </div>
+        </div>
+        <div class="hotkey-item">
+          <div class="hotkey-title">Войти</div>
+          <div class="hotkey-keys">
+            <span class="hotkey-pill">Cmd/Ctrl</span>
+            <span class="hotkey-pill">Shift</span>
+            <span class="hotkey-pill">K</span>
+          </div>
+        </div>
+        <div class="hotkey-item">
+          <div class="hotkey-title">Регистрация</div>
+          <div class="hotkey-keys">
+            <span class="hotkey-pill">Cmd/Ctrl</span>
+            <span class="hotkey-pill">Shift</span>
+            <span class="hotkey-pill">L</span>
+          </div>
+        </div>
+        <div class="hotkey-item">
+          <div class="hotkey-title">Панель администратора</div>
+          <div class="hotkey-keys">
+            <span class="hotkey-pill">Cmd/Ctrl</span>
+            <span class="hotkey-pill">Shift</span>
+            <span class="hotkey-pill">` / Ё</span>
+          </div>
+        </div>
+        <div class="hotkey-item">
+          <div class="hotkey-title">Навигация по вкладкам панели</div>
+          <div class="hotkey-keys">
+            <span class="hotkey-pill">Shift</span>
+            <span class="hotkey-pill">1…9</span>
+          </div>
+          <div style="font-size:0.85rem;color:#9ca3af;">(переключение секций админки)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Универсальный обработчик хоткеев + двойной Cmd/Ctrl+Shift+K для подсказок
+    (() => {
+      const isAuth = {{ user.is_authenticated|yesno:"true,false" }};
+      const isInput = (el) => {
+        const tag = (el?.tagName || "").toLowerCase();
+        return ["input", "textarea", "select"].includes(tag) || el?.isContentEditable;
+      };
+
+      const actions = {
+        profile: () => { if (isAuth) window.location.href = "{% url 'profile' %}"; },
+        catalog: () => window.location.href = "{% url 'catalog' %}",
+        categories: () => window.location.href = "{% url 'categories' %}",
+        logout: () => {
+          if (!isAuth) return;
+          const form = document.getElementById("quick-logout-form");
+          if (form) form.submit();
+        },
+        login: () => window.location.href = "{% url 'login' %}",
+        register: () => window.location.href = "{% url 'register' %}",
+        admin: () => window.location.href = "{% url 'dashboard:admin_panel' %}",
+        cheatsheet: () => toggleCheatsheet(true),
+      };
+
+      const hotkeys = [
+        { keys: ["p"], action: "profile" },
+        { keys: ["o"], action: "catalog" },
+        { keys: ["u"], action: "categories" },
+        { keys: ["y"], action: "logout" },
+        { keys: ["k"], action: "login" },
+        { keys: ["l"], action: "register" },
+        { keys: ["`", "~", "ё"], action: "admin", code: "Backquote" },
+      ];
+
+      let lastKTime = 0;
+
+      function toggleCheatsheet(show) {
+        const overlay = document.getElementById("hotkey-overlay");
+        if (!overlay) return;
+        overlay.style.display = show ? "flex" : "none";
+      }
+
+      const cheatsheetClose = document.getElementById("hotkey-close");
+      if (cheatsheetClose) {
+        cheatsheetClose.addEventListener("click", () => toggleCheatsheet(false));
+      }
+      const overlayEl = document.getElementById("hotkey-overlay");
+      if (overlayEl) {
+        overlayEl.addEventListener("click", (e) => {
+          if (e.target === overlayEl) toggleCheatsheet(false);
+        });
+      }
+
+      window.addEventListener("keydown", (e) => {
+        if (isInput(e.target)) return;
+        const withCmd = e.metaKey || e.ctrlKey;
+        const withShift = e.shiftKey;
+        if (!withCmd || !withShift || e.altKey) return;
+
+        const key = (e.key || "").toLowerCase();
+        const match = hotkeys.find(h => h.keys.includes(key) || (h.code && h.code === e.code));
+        if (match) {
+          e.preventDefault();
+          actions[match.action]?.();
+        }
+
+        // Double Cmd/Ctrl + Shift + K opens cheatsheet
+        if (key === "k") {
+          const now = Date.now();
+          if (now - lastKTime < 500) {
+            e.preventDefault();
+            toggleCheatsheet(true);
+          }
+          lastKTime = now;
+        }
+      }, true);
+
+      window.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") toggleCheatsheet(false);
+      });
+    })();
+  </script>
 </body>
 </html>

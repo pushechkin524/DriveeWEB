@@ -5,9 +5,11 @@ from . import views_site as views
 urlpatterns = [
     path("", views.home, name="home"),
     path("favorites/", views.favorites, name="favorites"),
+    path("favorites/toggle/<int:product_id>/", views.toggle_favorite, name="toggle_favorite"),
     path("catalog/", views.catalog, name="catalog"),
     path("categories/", views.categories_view, name="categories"),
     path("categories/<str:main_category>/", views.category_detail_view, name="category_detail"),
+    path("search/", views.search_view, name="search"),
     path("brands/<int:pk>/", views.brand_detail, name="brand_detail"),
     path("register/", views.register_view, name="register"),
     path("profile/", views.profile_view, name="profile"),

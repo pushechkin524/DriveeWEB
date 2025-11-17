@@ -12,6 +12,9 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
 from django.utils import timezone
 from openpyxl import Workbook
+from django.apps import apps
+import json
+from django.core import serializers
 
 from accounts.models import User, Role
 from store.models import (
@@ -22,6 +25,7 @@ from store.models import (
     PickupPoint,
     Brand,
     Car,
+    Favorite,
 )
 
 from .forms import (
@@ -32,6 +36,9 @@ from .forms import (
     PickupPointForm,
     AutoPartProductForm,
     AutoGoodsProductForm,
+    TireProductForm,
+    RimProductForm,
+    BatteryProductForm,
     BrandForm,
     CarForm,
     SalesReportForm,
@@ -47,6 +54,7 @@ NAV_TABS = [
     ("users", "Пользователи"),
     ("pickups", "Пункты выдачи"),
     ("reports", "Отчёты"),
+    ("backup", "Бекап"),
 ]
 ADMIN_SECTIONS = {key for key, _ in NAV_TABS} | {"groups"}
 MANAGER_SECTIONS = {"categories", "groups", "brands", "products", "orders"}
@@ -124,7 +132,12 @@ def _render_panel(request, mode: str):
             if request.GET.get("export") == "1":
                 return _export_sales_excel(report_rows, report_start, report_end, report_total, report_confirmed_only)
 
+    if section == "backup" and request.GET.get("download") == "1":
+        return _backup_download(request)
+
     if request.method == "POST":
+        if section == "backup":
+            return _backup_restore(request)
         handler = {
             "categories": _handle_category_post,
             "products": _handle_product_post,
@@ -166,11 +179,23 @@ def _render_panel(request, mode: str):
         "groups": CategoryGroup.objects.order_by("main_category", "order"),
         "auto_part_form": AutoPartProductForm(),
         "auto_goods_form": AutoGoodsProductForm(),
+        "tire_form": TireProductForm(),
+        "rim_form": RimProductForm(),
+        "battery_form": BatteryProductForm(),
         "auto_parts": Product.objects.select_related("category", "brand", "auto_part_spec")
         .filter(product_type=Product.ProductType.AUTO_PART)
         .order_by("-id")[:50],
         "auto_goods": Product.objects.select_related("category", "brand", "auto_goods_spec")
         .filter(product_type=Product.ProductType.AUTO_GOODS)
+        .order_by("-id")[:50],
+        "tires": Product.objects.select_related("category", "brand", "tire_spec")
+        .filter(product_type=Product.ProductType.TIRES)
+        .order_by("-id")[:50],
+        "rims": Product.objects.select_related("category", "brand", "rim_spec")
+        .filter(product_type=Product.ProductType.RIMS)
+        .order_by("-id")[:50],
+        "batteries": Product.objects.select_related("category", "brand", "battery_spec")
+        .filter(product_type=Product.ProductType.BATTERIES)
         .order_by("-id")[:50],
         "order_form": OrderRequestForm(),
         "orders": orders_list,
@@ -484,11 +509,16 @@ def _handle_product_post(request):
     tab = request.POST.get("product_tab", "auto_parts")
     if action == "delete":
         product = get_object_or_404(Product, pk=request.POST.get("object_id"))
-        tab = (
-            "auto_parts"
-            if product.product_type == Product.ProductType.AUTO_PART
-            else "auto_goods"
-        )
+        if product.product_type == Product.ProductType.AUTO_PART:
+            tab = "auto_parts"
+        elif product.product_type == Product.ProductType.AUTO_GOODS:
+            tab = "auto_goods"
+        elif product.product_type == Product.ProductType.TIRES:
+            tab = "tires"
+        elif product.product_type == Product.ProductType.RIMS:
+            tab = "rims"
+        elif product.product_type == Product.ProductType.BATTERIES:
+            tab = "batteries"
         product.delete()
         messages.success(request, "Товар удалён.")
     else:
@@ -497,6 +527,12 @@ def _handle_product_post(request):
             instance = get_object_or_404(Product, pk=request.POST.get("object_id"))
         if tab == "auto_goods":
             form = AutoGoodsProductForm(request.POST, request.FILES, instance=instance)
+        elif tab == "tires":
+            form = TireProductForm(request.POST, request.FILES, instance=instance)
+        elif tab == "rims":
+            form = RimProductForm(request.POST, request.FILES, instance=instance)
+        elif tab == "batteries":
+            form = BatteryProductForm(request.POST, request.FILES, instance=instance)
         else:
             form = AutoPartProductForm(request.POST, request.FILES, instance=instance)
             tab = "auto_parts"
@@ -528,6 +564,79 @@ def _handle_order_post(request):
         else:
             messages.error(request, f"Ошибка: {form.errors}")
     return redirect(f"{request.path}?section=orders")
+
+
+def _backup_download(request):
+    # Only admins
+    role_code = getattr(request.user, "role_code", None)
+    if not (request.user.is_superuser or role_code == Role.RoleName.ADMIN):
+        messages.error(request, "Недостаточно прав для выполнения бекапа.")
+        return redirect("home")
+
+    app_labels = ["accounts", "store"]
+    backup_data = {"generated_at": timezone.now().isoformat(), "data": {}}
+    for label in app_labels:
+        app_config = apps.get_app_config(label)
+        for model in app_config.get_models():
+            key = f"{model._meta.app_label}.{model.__name__}"
+            serialized = json.loads(
+                serializers.serialize(
+                    "json",
+                    model.objects.all(),
+                    use_natural_foreign_keys=True,
+                    use_natural_primary_keys=True,
+                )
+            )
+            backup_data["data"][key] = serialized
+
+    content = json.dumps(backup_data, ensure_ascii=False, indent=2)
+    filename = f"backup_{timezone.now().strftime('%Y%m%d_%H%M%S')}.json"
+    response = HttpResponse(content, content_type="application/json")
+    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+    return response
+
+
+def _backup_restore(request):
+    role_code = getattr(request.user, "role_code", None)
+    if not (request.user.is_superuser or role_code == Role.RoleName.ADMIN):
+        messages.error(request, "Недостаточно прав для восстановления.")
+        return redirect(f"{request.path}?section=backup")
+
+    upload = request.FILES.get("backup_file")
+    if not upload:
+        messages.error(request, "Файл бекапа не выбран.")
+        return redirect(f"{request.path}?section=backup")
+
+    try:
+        payload = json.load(upload)
+        data = payload.get("data", {})
+    except Exception as exc:
+        messages.error(request, f"Не удалось прочитать JSON: {exc}")
+        return redirect(f"{request.path}?section=backup")
+
+    app_labels = ["accounts", "store"]
+    try:
+        with transaction.atomic():
+            # Удаляем данные в обратном порядке моделей
+            for label in app_labels:
+                app_config = apps.get_app_config(label)
+                for model in reversed(list(app_config.get_models())):
+                    model.objects.all().delete()
+            # Восстанавливаем
+            for key, objects in data.items():
+                try:
+                    app_label, model_name = key.split(".")
+                    model = apps.get_model(app_label, model_name)
+                except Exception:
+                    continue
+                for obj in serializers.deserialize("json", json.dumps(objects), ignorenonexistent=True):
+                    obj.save()
+    except Exception as exc:
+        messages.error(request, f"Ошибка при восстановлении: {exc}")
+        return redirect(f"{request.path}?section=backup")
+
+    messages.success(request, "Бекап успешно восстановлен.")
+    return redirect(f"{request.path}?section=backup")
 
 
 def _handle_user_post(request):
@@ -671,3 +780,4 @@ def orders_feed(request):
             "message": message,
         }
     )
+from django.db import transaction

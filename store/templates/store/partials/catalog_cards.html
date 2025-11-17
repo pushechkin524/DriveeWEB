@@ -1,0 +1,92 @@
+{% for product in products %}
+  <div class="product-card">
+    <div style="position:relative;">
+      <a href="{% url 'product_detail' product.id %}" class="product-link">
+      {% if product.image %}
+        <img src="{{ product.image.url }}" alt="{{ product.name }}" class="product-img" loading="lazy">
+      {% else %}
+        <div class="product-img product-img--placeholder">
+          <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="8" y="18" width="48" height="34" rx="4" stroke="currentColor" stroke-width="2"/>
+            <path d="M20 26L24 20H40L44 26" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <circle cx="32" cy="37" r="10" stroke="currentColor" stroke-width="2"/>
+            <circle cx="32" cy="37" r="4" fill="currentColor"/>
+          </svg>
+          <span>Нет фото</span>
+        </div>
+      {% endif %}
+      </a>
+      <form method="post" action="{% url 'toggle_favorite' product.id %}" style="position:absolute; top:10px; right:10px;">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+        <button type="submit" class="favorite-btn" aria-label="Добавить в избранное">
+          {% if favorites_ids and product.id in favorites_ids %}
+            ❤️
+          {% else %}
+            🤍
+          {% endif %}
+        </button>
+      </form>
+    </div>
+    <div class="product-info">
+        {% if product.brand %}
+          <div class="product-brand"><a href="{% url 'brand_detail' product.brand_id %}">{{ product.brand.name }}</a></div>
+        {% endif %}
+        <div class="product-name">{{ product.name }}</div>
+        <div class="product-price">{{ product.price }} ₽</div>
+        {% with part=product.auto_part_spec goods=product.auto_goods_spec tire=product.tire_spec rim=product.rim_spec battery=product.battery_spec %}
+          {% if part or goods or tire or rim or battery %}
+            <div class="product-specs">
+              {% if tire %}
+                <div><strong>Сезон:</strong> {{ tire.get_season_display }}</div>
+                <div><strong>Размер:</strong> {{ tire.width }}/{{ tire.profile }} {{ tire.diameter }}</div>
+                {% if tire.stud_type %}<div><strong>Тип:</strong> {{ tire.get_stud_type_display }}</div>{% endif %}
+              {% elif rim %}
+                <div><strong>Диаметр:</strong> {{ rim.diameter }}</div>
+                <div><strong>Ширина:</strong> {{ rim.width }}</div>
+                {% if rim.pcd %}<div><strong>PCD:</strong> {{ rim.pcd }}</div>{% endif %}
+                {% if rim.offset %}<div><strong>ET:</strong> {{ rim.offset }}</div>{% endif %}
+              {% elif battery %}
+                <div><strong>Ёмкость:</strong> {{ battery.capacity_ah }}</div>
+                <div><strong>Пусковой ток:</strong> {{ battery.cold_cranking_amps }}</div>
+                {% if battery.voltage %}<div><strong>Напряжение:</strong> {{ battery.voltage }}</div>{% endif %}
+              {% elif part %}
+                {% if part.oem_number %}<div><strong>OEM:</strong> {{ part.oem_number }}</div>{% endif %}
+                {% if part.compatibility %}<div><strong>Совместимость:</strong> {{ part.compatibility }}</div>{% endif %}
+                {% if part.country_of_origin %}<div><strong>Страна:</strong> {{ part.country_of_origin }}</div>{% endif %}
+              {% elif goods %}
+                {% if goods.article_code %}<div><strong>Артикул:</strong> {{ goods.article_code }}</div>{% endif %}
+                {% if goods.volume_or_weight %}<div><strong>Объём/Вес:</strong> {{ goods.volume_or_weight }}</div>{% endif %}
+                {% if goods.size %}<div><strong>Размер:</strong> {{ goods.size }}</div>{% endif %}
+              {% endif %}
+            </div>
+          {% endif %}
+        {% endwith %}
+        <div class="product-stock {% if product.stock_quantity <= 0 %}out{% endif %}">
+          {% if product.stock_quantity > 0 %}
+            В наличии: {{ product.stock_quantity }} шт.
+          {% else %}
+            Нет в наличии
+          {% endif %}
+        </div>
+    </div>
+    <div class="product-actions">
+      {% if user.is_authenticated %}
+        {% if product.stock_quantity > 0 %}
+          <form class="product-form" action="{% url 'add_to_cart' product.id %}" method="post">
+            {% csrf_token %}
+            <input type="number" name="quantity" min="1" max="{{ product.stock_quantity }}" value="1" aria-label="Количество">
+            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+            <button type="submit" class="product-btn">🛒 Добавить</button>
+          </form>
+        {% else %}
+          <button type="button" class="product-btn" disabled>Нет в наличии</button>
+        {% endif %}
+      {% else %}
+        <a href="{% url 'login' %}?next={% url 'catalog' %}" class="product-btn product-btn--ghost">Войдите, чтобы добавить</a>
+      {% endif %}
+    </div>
+  </div>
+{% empty %}
+  <p>Нет товаров</p>
+{% endfor %}

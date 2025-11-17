@@ -175,8 +175,8 @@
       </p>
     </div>
 
-    {% with part=product.auto_part_spec goods=product.auto_goods_spec %}
-      {% if part or goods %}
+    {% with part=product.auto_part_spec goods=product.auto_goods_spec tire=product.tire_spec rim=product.rim_spec battery=product.battery_spec %}
+      {% if part or goods or tire or rim or battery %}
         <div class="detail-card">
           <h3 style="margin-top:0;">Характеристики</h3>
           <dl style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;font-size:0.95rem;color:#475569;">
@@ -203,6 +203,37 @@
               {% if goods.country_of_origin %}<div><dt style="font-weight:600;">Страна</dt><dd>{{ goods.country_of_origin }}</dd></div>{% endif %}
               {% if goods.warranty %}<div><dt style="font-weight:600;">Гарантия</dt><dd>{{ goods.warranty }}</dd></div>{% endif %}
               {% if goods.package_contents %}<div><dt style="font-weight:600;">Комплектация</dt><dd>{{ goods.package_contents }}</dd></div>{% endif %}
+            {% endif %}
+            {% if tire %}
+              {% if tire.season %}<div><dt style="font-weight:600;">Сезон</dt><dd>{{ tire.get_season_display }}</dd></div>{% endif %}
+              {% if tire.stud_type and tire.season == "winter" %}<div><dt style="font-weight:600;">Шипы / Липучка</dt><dd>{{ tire.get_stud_type_display }}</dd></div>{% endif %}
+              {% if tire.width %}<div><dt style="font-weight:600;">Ширина</dt><dd>{{ tire.width }}</dd></div>{% endif %}
+              {% if tire.profile %}<div><dt style="font-weight:600;">Профиль</dt><dd>{{ tire.profile }}</dd></div>{% endif %}
+              {% if tire.diameter %}<div><dt style="font-weight:600;">Диаметр</dt><dd>{{ tire.diameter }}</dd></div>{% endif %}
+              {% if tire.load_index %}<div><dt style="font-weight:600;">Индекс нагрузки</dt><dd>{{ tire.load_index }}</dd></div>{% endif %}
+              {% if tire.speed_index %}<div><dt style="font-weight:600;">Индекс скорости</dt><dd>{{ tire.speed_index }}</dd></div>{% endif %}
+              {% if tire.country_of_origin %}<div><dt style="font-weight:600;">Страна</dt><dd>{{ tire.country_of_origin }}</dd></div>{% endif %}
+            {% endif %}
+            {% if rim %}
+              {% if rim.diameter %}<div><dt style="font-weight:600;">Диаметр</dt><dd>{{ rim.diameter }}</dd></div>{% endif %}
+              {% if rim.width %}<div><dt style="font-weight:600;">Ширина обода</dt><dd>{{ rim.width }}</dd></div>{% endif %}
+              {% if rim.pcd %}<div><dt style="font-weight:600;">PCD</dt><dd>{{ rim.pcd }}</dd></div>{% endif %}
+              {% if rim.offset %}<div><dt style="font-weight:600;">Вылет (ET)</dt><dd>{{ rim.offset }}</dd></div>{% endif %}
+              {% if rim.center_bore %}<div><dt style="font-weight:600;">Центральное отверстие</dt><dd>{{ rim.center_bore }}</dd></div>{% endif %}
+              {% if rim.material %}<div><dt style="font-weight:600;">Материал</dt><dd>{{ rim.material }}</dd></div>{% endif %}
+              {% if rim.color %}<div><dt style="font-weight:600;">Цвет</dt><dd>{{ rim.color }}</dd></div>{% endif %}
+              {% if rim.country_of_origin %}<div><dt style="font-weight:600;">Страна</dt><dd>{{ rim.country_of_origin }}</dd></div>{% endif %}
+            {% endif %}
+            {% if battery %}
+              {% if battery.capacity_ah %}<div><dt style="font-weight:600;">Ёмкость</dt><dd>{{ battery.capacity_ah }}</dd></div>{% endif %}
+              {% if battery.cold_cranking_amps %}<div><dt style="font-weight:600;">Пусковой ток</dt><dd>{{ battery.cold_cranking_amps }}</dd></div>{% endif %}
+              {% if battery.voltage %}<div><dt style="font-weight:600;">Напряжение</dt><dd>{{ battery.voltage }}</dd></div>{% endif %}
+              {% if battery.polarity %}<div><dt style="font-weight:600;">Полярность</dt><dd>{{ battery.polarity }}</dd></div>{% endif %}
+              {% if battery.terminal_type %}<div><dt style="font-weight:600;">Тип клемм</dt><dd>{{ battery.terminal_type }}</dd></div>{% endif %}
+              {% if battery.length_mm %}<div><dt style="font-weight:600;">Длина</dt><dd>{{ battery.length_mm }} мм</dd></div>{% endif %}
+              {% if battery.width_mm %}<div><dt style="font-weight:600;">Ширина</dt><dd>{{ battery.width_mm }} мм</dd></div>{% endif %}
+              {% if battery.height_mm %}<div><dt style="font-weight:600;">Высота</dt><dd>{{ battery.height_mm }} мм</dd></div>{% endif %}
+              {% if battery.country_of_origin %}<div><dt style="font-weight:600;">Страна</dt><dd>{{ battery.country_of_origin }}</dd></div>{% endif %}
             {% endif %}
           </dl>
         </div>
