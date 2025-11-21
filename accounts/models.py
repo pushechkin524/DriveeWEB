@@ -44,6 +44,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     role = models.ForeignKey(Role, null=True, blank=True, on_delete=models.SET_NULL)
 
     is_active = models.BooleanField(default=True)
+    is_banned = models.BooleanField(default=False)
     is_staff = models.BooleanField(default=False)
     date_joined = models.DateTimeField(auto_now_add=True)
 

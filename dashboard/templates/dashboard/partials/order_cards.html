@@ -7,10 +7,12 @@
         <div class="order-date">{{ order.created_at|date:"d.m.Y H:i" }}</div>
       </div>
       <span class="order-status {{ status }}">
-        {% if order.status == "confirmed" %}
+        {% if status == "confirmed" %}
           Подтверждён
-        {% elif order.status == "declined" %}
-          Отменён
+        {% elif status == "declined" %}
+          Отменён администратором
+        {% elif status == "cancelled" %}
+          Отменён пользователем
         {% else %}
           Новый
         {% endif %}
@@ -51,7 +53,7 @@
     <div class="order-footer">
       <div class="order-total">Итого: {{ order.total_amount }} ₽</div>
       <div class="order-actions">
-        {% if order.status != "confirmed" %}
+        {% if order.status != "confirmed" and order.status != "cancelled" %}
           <form method="post">
             {% csrf_token %}
             <input type="hidden" name="section" value="orders">
@@ -60,7 +62,7 @@
             <button class="btn btn-success">Подтвердить</button>
           </form>
         {% endif %}
-        {% if order.status != "declined" %}
+        {% if order.status != "declined" and order.status != "cancelled" %}
           <form method="post">
             {% csrf_token %}
             <input type="hidden" name="section" value="orders">

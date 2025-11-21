@@ -32,6 +32,9 @@
         {% if product.brand %}
           <div class="product-brand"><a href="{% url 'brand_detail' product.brand_id %}">{{ product.brand.name }}</a></div>
         {% endif %}
+        {% if product.sku %}
+          <div class="product-sku">Артикул: {{ product.sku }}</div>
+        {% endif %}
         <div class="product-name">{{ product.name }}</div>
         <div class="product-price">{{ product.price }} ₽</div>
         {% with part=product.auto_part_spec goods=product.auto_goods_spec tire=product.tire_spec rim=product.rim_spec battery=product.battery_spec %}

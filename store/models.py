@@ -1,4 +1,6 @@
 from decimal import Decimal
+import secrets
+import string
 
 from django.db import models
 from django.conf import settings
@@ -106,6 +108,7 @@ class Product(models.Model):
         BATTERIES = ("batteries", "Аккумуляторы")
 
     name = models.CharField(max_length=255, verbose_name="Название товара")
+    sku = models.CharField(max_length=6, unique=True, editable=False, verbose_name="Артикул")
     description = models.TextField(blank=True, null=True, verbose_name="Описание")
     price = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Цена")
     category = models.ForeignKey("Category", on_delete=models.CASCADE, related_name="products", verbose_name="Категория")
@@ -137,6 +140,21 @@ class Product(models.Model):
     class Meta:
         verbose_name = "Товар"
         verbose_name_plural = "Товары"
+
+    def _ensure_sku(self):
+        if self.sku:
+            return
+        alphabet = string.ascii_uppercase + string.digits
+        for _ in range(20):
+            candidate = "".join(secrets.choice(alphabet) for _ in range(6))
+            if not Product.objects.filter(sku=candidate).exists():
+                self.sku = candidate
+                return
+        raise ValueError("Не удалось сгенерировать уникальный артикул")
+
+    def save(self, *args, **kwargs):
+        self._ensure_sku()
+        super().save(*args, **kwargs)
 
 
 class AutoPartSpecification(models.Model):

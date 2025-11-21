@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Поиск по OEM — Drivee{% endblock %}
+{% block title %}Поиск по товарам — Drivee{% endblock %}
 
 {% block content %}
 <style>
@@ -195,9 +195,9 @@
 </style>
 
 <div class="search-page">
-  <h1>Поиск по OEM номеру</h1>
+  <h1>Поиск по товарам</h1>
   <form class="search-form" method="get">
-    <input type="text" name="q" placeholder="Введите OEM / оригинальный номер" value="{{ query }}" autofocus>
+    <input type="text" name="q" placeholder="Название, артикул (SKU) или OEM номер" value="{{ query }}" autofocus>
     <button type="submit">Найти</button>
   </form>
 
@@ -209,7 +209,7 @@
       {% include "store/partials/catalog_cards.html" with products=results request=request user=user %}
     </div>
   {% else %}
-    <p class="results-count">Введите OEM номер, чтобы увидеть совпадения.</p>
+    <p class="results-count">Введите название, артикул или OEM номер, чтобы увидеть совпадения.</p>
   {% endif %}
 </div>
 {% endblock %}

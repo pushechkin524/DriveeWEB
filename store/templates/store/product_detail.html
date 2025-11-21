@@ -126,6 +126,22 @@
   .brand-link:hover {
     text-decoration: underline;
   }
+  .sku-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: #f1f5f9;
+    color: #0f172a;
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-weight: 700;
+    border: 1px solid #e2e8f0;
+    margin: 10px 0;
+  }
+  .sku-pill span {
+    color: #475569;
+    font-weight: 600;
+  }
 </style>
 
 <div class="product-detail">
@@ -159,6 +175,9 @@
         </a>
       {% endif %}
     </div>
+    {% if product.sku %}
+      <div class="sku-pill">Артикул: <span>{{ product.sku }}</span></div>
+    {% endif %}
     <div class="product-price">{{ product.price }} ₽</div>
     <div class="stock-pill {% if product.stock_quantity <= 0 %}out{% endif %}">
       {% if product.stock_quantity > 0 %}

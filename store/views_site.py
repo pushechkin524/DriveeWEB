@@ -5,7 +5,10 @@ from django.db import transaction
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.translation import gettext_lazy as _
+from django.utils import timezone
 from django.db.models import Q
+from django.core.mail import send_mail
+import logging
 
 from .forms import CheckoutForm, RegisterForm, UserVehicleForm, ProfileInfoForm
 from .models import (
@@ -27,6 +30,7 @@ from .models import (
     BatterySpecification,
     UserVehicle,
     UserProfile,
+    AuditLog,
 )
 
 
@@ -97,6 +101,22 @@ MAIN_CATEGORY_CARDS = [
 ]
 
 
+logger = logging.getLogger(__name__)
+
+
+def _audit_log(essence: str, action: str, user):
+    """Safe writer for user-facing audit events."""
+    try:
+        AuditLog.objects.create(
+            essence=essence,
+            action=action,
+            date=timezone.now(),
+            user=user if getattr(user, "is_authenticated", False) else None,
+        )
+    except Exception as exc:
+        logger.exception("Audit log write failed (%s / %s)", essence, action, exc_info=exc)
+
+
 def home(request):
     daily_deals = DailyDeal.objects.select_related("product")[:6]
     return render(request, "store/home.html", {"daily_deals": daily_deals})
@@ -114,10 +134,13 @@ def search_view(request):
         results = (
             Product.objects.select_related("brand", "category", "auto_part_spec")
             .filter(
-                product_type=Product.ProductType.AUTO_PART,
-                auto_part_spec__oem_number__icontains=query,
+                Q(name__icontains=query)
+                | Q(description__icontains=query)
+                | Q(sku__icontains=query)
+                | Q(auto_part_spec__oem_number__icontains=query),
                 stock_quantity__gt=0,
             )
+            .distinct()
         )
     return render(
         request,
@@ -134,10 +157,8 @@ def catalog(request):
     subcategory_slug = request.GET.get("subcategory")
     main_category = request.GET.get("main_category")
 
-    products_qs = (
-        Product.objects.select_related("brand", "category")
-        .filter(stock_quantity__gt=0)
-    )
+    base_filters = {"stock_quantity__gt": 0}
+    products_qs = Product.objects.select_related("brand", "category")
     selected_subcategory = None
     selected_main_category_label = None
     is_rims = False
@@ -154,7 +175,7 @@ def catalog(request):
             is_parts = True
         if selected_subcategory.main_category == Category.MainCategory.BATTERIES:
             is_batteries = True
-        products_qs = products_qs.filter(category=selected_subcategory)
+        base_filters["category"] = selected_subcategory
     elif main_category:
         try:
             selected_main_category_label = Category.MainCategory(main_category).label
@@ -168,7 +189,7 @@ def catalog(request):
             is_parts = True
         if main_category == Category.MainCategory.BATTERIES:
             is_batteries = True
-        products_qs = products_qs.filter(category__main_category=main_category)
+        base_filters["category__main_category"] = main_category
 
     brand_filter = ""
     diameter_filter = ""
@@ -194,7 +215,7 @@ def catalog(request):
     if is_rims:
         products_qs = Product.objects.select_related("brand", "category", "rim_spec").filter(
             product_type=Product.ProductType.RIMS,
-            stock_quantity__gt=0,
+            **base_filters,
         )
         brand_filter = request.GET.get("brand") or ""
         diameter_filter = request.GET.get("diameter") or ""
@@ -235,7 +256,7 @@ def catalog(request):
     elif is_tires:
         products_qs = Product.objects.select_related("brand", "category", "tire_spec").filter(
             product_type=Product.ProductType.TIRES,
-            stock_quantity__gt=0,
+            **base_filters,
         )
         brand_filter = request.GET.get("brand") or ""
         season_filter = request.GET.get("season") or ""
@@ -276,7 +297,7 @@ def catalog(request):
     elif is_batteries:
         products_qs = Product.objects.select_related("brand", "category", "battery_spec").filter(
             product_type=Product.ProductType.BATTERIES,
-            stock_quantity__gt=0,
+            **base_filters,
         )
         brand_filter = request.GET.get("brand") or ""
         capacity_filter = request.GET.get("capacity_ah") or ""
@@ -321,7 +342,7 @@ def catalog(request):
     elif is_parts:
         products_qs = Product.objects.select_related("brand", "category").prefetch_related("compatible_cars").filter(
             product_type=Product.ProductType.AUTO_PART,
-            stock_quantity__gt=0,
+            **base_filters,
         )
         brand_filter = request.GET.get("brand") or ""
         car_filter = request.GET.get("car") or ""
@@ -434,8 +455,10 @@ def toggle_favorite(request, product_id):
     fav, created = Favorite.objects.get_or_create(customer=customer, product=product)
     if not created:
         fav.delete()
+        _audit_log(essence=f"Favorite:{fav.pk}", action="remove_favorite", user=request.user)
         messages.info(request, "Товар удалён из избранного.")
     else:
+        _audit_log(essence=f"Favorite:{fav.pk}", action="add_favorite", user=request.user)
         messages.success(request, "Товар добавлен в избранное.")
     return redirect(next_url)
 
@@ -561,6 +584,19 @@ def profile_view(request):
 
 
 @login_required
+def cancel_order(request, order_id):
+    order = get_object_or_404(OrderRequest, pk=order_id, user=request.user)
+    if request.method == "POST":
+        if order.status in {"cancelled", "declined"}:
+            messages.info(request, _("Заказ уже отменён."))
+        else:
+            order.status = "cancelled"
+            order.save(update_fields=["status"])
+            messages.info(request, _("Заказ отменён."))
+    return redirect("profile")
+
+
+@login_required
 def cart_view(request):
     cart, created = Cart.objects.get_or_create(user=request.user)
     items = cart.items.select_related("product", "product__brand", "product__category")
@@ -616,6 +652,7 @@ def add_to_cart(request, product_id):
 
         cart_item.quantity = current_qty + quantity
         cart_item.save()
+        _audit_log(essence=f"CartItem:{cart_item.pk}", action="add_to_cart", user=request.user)
         messages.success(request, _("Товар добавлен в корзину."))
 
     return redirect(request.POST.get("next") or "catalog")
@@ -751,8 +788,24 @@ def checkout_view(request):
                         )
                     product.stock_quantity -= item.quantity
                     product.save(update_fields=["stock_quantity"])
-
                 cart.items.all().delete()
+                _audit_log(essence=f"OrderRequest:{order.pk}", action="create_order", user=request.user)
+                # Уведомление по email с номером заказа
+                try:
+                    send_mail(
+                        subject=_("Ваш заказ #{id} принят").format(id=order.pk),
+                        message=_(
+                            "Спасибо за заказ!\n"
+                            "Номер заказа: {id}\n"
+                            "Сумма: {total} ₽\n"
+                            "Мы свяжемся с вами для подтверждения."
+                        ).format(id=order.pk, total=order.total_amount),
+                        from_email=None,
+                        recipient_list=[order.email],
+                        fail_silently=True,
+                    )
+                except Exception as exc:
+                    logger.exception("order email send failed #%s", order.pk, exc_info=exc)
         except ValueError as exc:
             messages.error(request, exc.args[0])
             return redirect("cart")
@@ -804,9 +857,11 @@ def update_cart_item(request, item_id):
             if quantity_value <= 0:
                 cart_item.delete()
                 messages.info(request, _("Товар удалён из корзины."))
+                _audit_log(essence=f"CartItem:{cart_item.pk}", action="remove_from_cart", user=request.user)
             else:
                 cart_item.quantity = quantity_value
                 cart_item.save()
+                _audit_log(essence=f"CartItem:{cart_item.pk}", action="update_cart", user=request.user)
                 messages.success(request, _("Количество обновлено."))
     return redirect("cart")
 
@@ -814,6 +869,7 @@ def update_cart_item(request, item_id):
 @login_required
 def remove_cart_item(request, item_id):
     cart_item = get_object_or_404(CartItem, id=item_id, cart__user=request.user)
+    _audit_log(essence=f"CartItem:{cart_item.pk}", action="remove_from_cart", user=request.user)
     cart_item.delete()
     messages.info(request, _("Товар удалён из корзины."))
     return redirect("cart")

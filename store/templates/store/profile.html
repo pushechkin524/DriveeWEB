@@ -183,6 +183,19 @@
   .order-status.new { background: #eff6ff; color: #1d4ed8; }
   .order-status.confirmed { background: #ecfccb; color: #15803d; }
   .order-status.declined { background: #fee2e2; color: #b91c1c; }
+   .order-status.cancelled { background: #f1f5f9; color: #475569; }
+  .order-cancel-btn {
+    margin-top: 12px;
+    padding: 10px 14px;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    background: #f8fafc;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.1s ease, background 0.2s;
+  }
+  .order-cancel-btn:hover { background:#f1f5f9; }
+  .order-cancel-btn:active { transform: translateY(1px); }
   .order-items {
     margin: 16px 0;
     border-top: 1px solid #e2e8f0;
@@ -334,7 +347,19 @@
                   <strong>Заказ #{{ order.id }}</strong>
                   <span>{{ order.created_at|date:"d.m.Y H:i" }}</span>
                 </div>
-                <span class="order-status {{ status }}">{{ status|capfirst }}</span>
+                <span class="order-status {{ status }}">
+                  {% if status == "new" %}
+                    Новый
+                  {% elif status == "confirmed" %}
+                    Подтверждён
+                  {% elif status == "declined" %}
+                    Отклонён
+                  {% elif status == "cancelled" %}
+                    Отменён
+                  {% else %}
+                    {{ status|capfirst }}
+                  {% endif %}
+                </span>
               </div>
               {% endwith %}
             <div class="order-items">
@@ -353,6 +378,12 @@
               <p style="margin:0 0 8px;color:#94a3b8;">Комментарий: {{ order.comment }}</p>
             {% endif %}
             <strong>Итого: {{ order.total_amount }} ₽</strong>
+            {% if order.status|lower != "cancelled" and order.status|lower != "declined" %}
+              <form method="post" action="{% url 'cancel_order' order.id %}" style="margin-top:10px;">
+                {% csrf_token %}
+                <button type="submit" class="order-cancel-btn">Отменить заказ</button>
+              </form>
+            {% endif %}
           </div>
         {% endfor %}
       </div>

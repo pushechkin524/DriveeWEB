@@ -18,6 +18,12 @@ header a:hover {
   transition: 0.2s;
 }
 
+.product-sku {
+  font-size: 0.9rem;
+  color: #6b7280;
+  margin-bottom: 4px;
+}
+
 
 .catalog-sidebar {
   width: 30%;

@@ -59,7 +59,12 @@ class RegisterForm(forms.ModelForm):
 
     def clean_phone_number(self):
         phone = self.cleaned_data.get("phone_number", "")
-        return _format_phone(phone)
+        formatted = _format_phone(phone)
+        # Проверка бана по номеру
+        from .models import UserProfile  # локальный импорт, чтобы избежать циклов
+        if UserProfile.objects.filter(phone_number=formatted, user__is_banned=True).exists():
+            raise forms.ValidationError("Этот номер заблокирован. Аккаунт недоступен.")
+        return formatted
 
     def save(self, commit=True):
         user = super().save(commit=False)

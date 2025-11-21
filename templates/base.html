@@ -22,12 +22,13 @@
       justify-content: space-between;
       align-items: center;
       flex-wrap: nowrap;
+      position: relative;
     }
 
     .header-left {
       display: flex;
       align-items: center;
-      gap: 40px;
+      gap: 16px;
     }
 
     .logo {
@@ -37,8 +38,14 @@
       color: #fff;
     }
 
+    nav {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
     nav a {
-      margin-left: 20px;
+      margin: 0;
       color: #e5e7eb;
       text-decoration: none;
       font-weight: 500;
@@ -129,6 +136,88 @@
       padding: 2px 8px;
       border-radius: 999px;
       font-size: 0.85rem;
+    }
+
+    .burger {
+      display: none;
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,0.2);
+      background: rgba(255,255,255,0.08);
+      color: #fff;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      padding: 0;
+    }
+
+    .burger span {
+      display: block;
+      width: 18px;
+      height: 2px;
+      background: currentColor;
+      position: relative;
+    }
+    .burger span::before,
+    .burger span::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      width: 18px;
+      height: 2px;
+      background: currentColor;
+    }
+    .burger span::before { top: -6px; }
+    .burger span::after { top: 6px; }
+
+    /* Mobile menu */
+    .mobile-menu {
+      display: none;
+      flex-direction: column;
+      gap: 14px;
+      background: #0f172a;
+      padding: 14px;
+      border-radius: 12px;
+      position: absolute;
+      top: 72px;
+      left: 16px;
+      right: 16px;
+      z-index: 1000;
+      box-shadow: 0 16px 40px rgba(0,0,0,0.35);
+    }
+
+    .mobile-menu a {
+      color: #e5e7eb;
+      text-decoration: none;
+      font-weight: 600;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .mobile-menu a:last-child {
+      border-bottom: none;
+    }
+
+    @media (max-width: 900px) {
+      header {
+        padding: 14px 16px;
+        flex-wrap: wrap;
+      }
+      .header-left {
+        width: 100%;
+        justify-content: space-between;
+      }
+      .desktop-nav,
+      .btn-cart,
+      .user-info {
+        display: none;
+      }
+      .burger {
+        display: inline-flex;
+      }
+      main {
+        padding: 0 16px;
+      }
     }
 
     main {
@@ -265,7 +354,7 @@
   <header>
     <div class="header-left">
       <a href="{% url 'home' %}" class="logo">Drivee</a>
-      <nav>
+      <nav class="desktop-nav">
         <a href="{% url 'search' %}">Поиск</a>
         <a href="{% url 'catalog' %}">Каталог</a>
         <a href="{% url 'favorites' %}">Избранное</a>
@@ -277,6 +366,9 @@
           <span class="cart-count">{{ cart_item_count }}</span>
         {% endif %}
       </a>
+      <button class="burger" id="burger-btn" aria-label="Открыть меню">
+        <span></span>
+      </button>
     </div>
 
     <div class="user-info">
@@ -296,6 +388,29 @@
       {% else %}
         <a href="{% url 'login' %}" class="btn-login">Войти</a>
         <a href="{% url 'register' %}" class="btn-register">Регистрация</a>
+      {% endif %}
+    </div>
+
+    <div class="mobile-menu" id="mobile-menu">
+      <a href="{% url 'search' %}">Поиск</a>
+      <a href="{% url 'catalog' %}">Каталог</a>
+      <a href="{% url 'favorites' %}">Избранное</a>
+      <a href="{% url 'categories' %}">Категории</a>
+      <a href="{% url 'cart' %}">Корзина</a>
+      {% if user.is_authenticated %}
+        {% if user.is_superuser or user.role and user.role.role == "admin" %}
+          <a href="{% url 'dashboard:admin_panel' %}">Панель администратора</a>
+        {% elif user.role and user.role.role == "manager" %}
+          <a href="{% url 'dashboard:manager_panel' %}">Панель менеджера</a>
+        {% endif %}
+        <a href="{% url 'profile' %}">Профиль</a>
+        <form id="quick-logout-form-mobile" action="{% url 'logout' %}" method="post">
+          {% csrf_token %}
+          <button type="submit" class="btn-logout" style="width:100%;text-align:left;background:none;border:none;color:#f87171;padding:8px 0;cursor:pointer;">Выйти</button>
+        </form>
+      {% else %}
+        <a href="{% url 'login' %}">Войти</a>
+        <a href="{% url 'register' %}">Регистрация</a>
       {% endif %}
     </div>
   </header>
@@ -391,6 +506,24 @@
   </div>
 
   <script>
+    // Burger menu toggle
+    (function () {
+      const burger = document.getElementById("burger-btn");
+      const menu = document.getElementById("mobile-menu");
+      if (!burger || !menu) return;
+      burger.addEventListener("click", () => {
+        const isOpen = menu.style.display === "flex";
+        menu.style.display = isOpen ? "none" : "flex";
+      });
+      document.addEventListener("click", (e) => {
+        if (!menu || !burger) return;
+        if (menu.style.display !== "flex") return;
+        if (!menu.contains(e.target) && !burger.contains(e.target)) {
+          menu.style.display = "none";
+        }
+      });
+    })();
+
     // Универсальный обработчик хоткеев + двойной Cmd/Ctrl+Shift+K для подсказок
     (() => {
       const isAuth = {{ user.is_authenticated|yesno:"true,false" }};

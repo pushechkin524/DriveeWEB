@@ -218,6 +218,79 @@
     overflow: hidden;
   }
 
+  /* Responsive tweaks */
+  @media (max-width: 1200px) {
+    .admin-shell {
+      padding: 24px;
+    }
+    .admin-nav {
+      border-radius: 18px;
+      justify-content: center;
+    }
+    .product-form-grid {
+      gap: 12px;
+    }
+    .form-grid.form-grid--compact input,
+    .form-grid.form-grid--compact select {
+      width: 100%;
+      max-width: 100%;
+    }
+  }
+
+  @media (max-width: 992px) {
+    .admin-shell {
+      padding: 18px;
+    }
+    .admin-boxed {
+      padding: 0 12px;
+    }
+    .admin-nav {
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .admin-nav a {
+      padding: 8px 14px;
+    }
+    .product-form-grid {
+      flex-direction: column;
+    }
+    table {
+      display: block;
+      overflow-x: auto;
+      white-space: nowrap;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .admin-shell {
+      padding: 14px;
+      border-radius: 18px;
+    }
+    .panel {
+      padding: 14px;
+    }
+    .stats-grid {
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    }
+    .admin-nav {
+      flex-direction: column;
+      align-items: stretch;
+      border-radius: 12px;
+    }
+    .admin-nav a {
+      width: 100%;
+      text-align: center;
+    }
+    .product-form-grid input,
+    .product-form-grid select,
+    .product-form-grid textarea {
+      font-size: 0.95rem;
+    }
+    .admin-shell h1 {
+      font-size: 1.3rem;
+    }
+  }
+
   th, td {
     padding: 12px;
     border-bottom: 1px solid rgba(248, 250, 252, 0.08);
@@ -642,6 +715,10 @@
     background: rgba(248, 113, 113, 0.25);
     color: #fecaca;
   }
+  .order-status.cancelled {
+    background: rgba(148, 163, 184, 0.25);
+    color: #e2e8f0;
+  }
 
   .order-items {
     margin: 16px 0;
@@ -1064,6 +1141,36 @@
         <input type="file" name="backup_file" accept="application/json">
         <button class="btn btn-primary" type="submit">Загрузить бекап</button>
       </form>
+    </div>
+
+  {% elif section == "audit" %}
+    <div class="panel">
+      <h2>Журнал аудита</h2>
+      <p>Последние 200 событий по всем моделям.</p>
+      <div class="table-wrapper">
+        <table class="table-list">
+          <thead>
+            <tr>
+              <th style="width:120px;">Время</th>
+              <th>Действие</th>
+              <th>Сущность</th>
+              <th>Пользователь</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for log in audit_logs %}
+              <tr>
+                <td>{{ log.date|date:"d.m.Y H:i" }}</td>
+                <td><span class="badge badge-blue">{{ log.action }}</span></td>
+                <td>{{ log.essence }}</td>
+                <td>{{ log.user|default:"—" }}</td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="4">Пока нет записей.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
     </div>
 
   {% elif section == "products" %}
@@ -1586,7 +1693,7 @@
       {% elif product_tab == "auto_parts" %}
         <h2>Список автозапчастей</h2>
         <table class="product-table">
-          <thead><tr><th>Название</th><th>Категория</th><th>Бренд</th><th>Цена</th><th>Остаток</th><th></th></tr></thead>
+          <thead><tr><th>Название</th><th>SKU</th><th>Категория</th><th>Бренд</th><th>Цена</th><th>Остаток</th><th></th></tr></thead>
           <tbody>
             {% for product in auto_parts %}
               <tr
@@ -1611,6 +1718,7 @@
                 data-certificates="{{ product.auto_part_spec.certificates|default_if_none:''|escape }}"
               >
                 <td>{{ product.name }}</td>
+                <td>{{ product.sku }}</td>
                 <td>{{ product.category }}</td>
                 <td>{{ product.brand|default:"—" }}</td>
                 <td>{{ product.price }} ₽</td>
@@ -2011,11 +2119,41 @@
       })();
     </script>
 
+  {% elif section == "product_search" %}
+    <div class="panel">
+      <h2>Поиск по товарам (SKU)</h2>
+      <form method="get" class="order-filter-form" style="margin-bottom:16px;">
+        <input type="hidden" name="section" value="product_search">
+        <input type="text" name="product_search" value="{{ product_search_query|default:'' }}" placeholder="Введите артикул (SKU)" style="padding:8px 12px;border-radius:10px;border:1px solid rgba(148,163,184,0.3);background:rgba(15,23,42,0.04);color:#1f2937;">
+        <button class="btn btn-primary" type="submit">Найти</button>
+      </form>
+      <table class="product-table">
+        <thead><tr><th>Название</th><th>SKU</th><th>Категория</th><th>Бренд</th><th>Цена</th><th>Остаток</th></tr></thead>
+        <tbody>
+          {% for product in product_search_results %}
+            <tr>
+              <td>{{ product.name }}</td>
+              <td>{{ product.sku }}</td>
+              <td>{{ product.category }}</td>
+              <td>{{ product.brand|default:"—" }}</td>
+              <td>{{ product.price }} ₽</td>
+              <td>{{ product.stock_quantity }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="6">Ничего не найдено. Введите артикул и нажмите "Найти".</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
   {% elif section == "orders" %}
     <div class="panel">
       <h2>Заказы</h2>
       <form method="get" class="order-filter-form">
         <input type="hidden" name="section" value="orders">
+        <input type="text" name="order_search" value="{{ order_search|default:'' }}" placeholder="Номер заказа" style="padding:8px 12px;border-radius:10px;border:1px solid rgba(148,163,184,0.3);background:rgba(15,23,42,0.4);color:#e5e7eb;">
+        <input type="text" name="product_sku" value="{{ product_sku|default:'' }}" placeholder="Артикул товара" style="padding:8px 12px;border-radius:10px;border:1px solid rgba(148,163,184,0.3);background:rgba(15,23,42,0.4);color:#e5e7eb;">
+        <input type="text" name="phone_search" value="{{ phone_search|default:'' }}" placeholder="Телефон" style="padding:8px 12px;border-radius:10px;border:1px solid rgba(148,163,184,0.3);background:rgba(15,23,42,0.4);color:#e5e7eb;">
         <label>
           <input type="checkbox" name="confirmed_only" value="1" {% if orders_confirmed_only %}checked{% endif %}>
           Только подтверждённые
@@ -2034,6 +2172,10 @@
         <div class="order-status-card order-status-card--declined">
           <span>Отменены</span>
           <strong>{{ order_status_stats.declined|default:0 }}</strong>
+        </div>
+        <div class="order-status-card order-status-card--declined">
+          <span>Отменены пользователем</span>
+          <strong>{{ order_status_stats.cancelled|default:0 }}</strong>
         </div>
       </div>
       <div id="order-alert" class="order-alert" role="alert" aria-live="polite" hidden data-order-alert-message>Новый заказ</div>
@@ -2197,16 +2339,37 @@
       </form>
 
       <table>
-        <thead><tr><th>Email</th><th>Имя</th><th>Роль</th><th>Статус</th><th></th></tr></thead>
+        <thead><tr><th>Email</th><th>Имя</th><th>Роль</th><th>Статус</th><th>Телефон</th><th></th></tr></thead>
         <tbody>
           {% for user in users %}
             <tr>
               <td>{{ user.email }}</td>
               <td>{{ user.full_name }}</td>
               <td>{{ user.role }}</td>
-              <td>{% if user.is_staff %}Админ{% else %}Пользователь{% endif %}</td>
+              <td>
+                {% if user.is_banned %}
+                  <span class="badge badge-red">Забанен</span>
+                {% elif user.is_staff %}
+                  Админ
+                {% else %}
+                  Пользователь
+                {% endif %}
+              </td>
+              <td>{{ user.profile.phone_number|default:"—" }}</td>
               <td>
                 <form method="post">
+                  {% csrf_token %}
+                  <input type="hidden" name="section" value="users">
+                  <input type="hidden" name="object_id" value="{{ user.pk }}">
+                  {% if user.is_banned %}
+                    <input type="hidden" name="action" value="unban">
+                    <button class="btn btn-primary">Разбанить</button>
+                  {% else %}
+                    <input type="hidden" name="action" value="ban">
+                    <button class="btn btn-danger" onclick="return confirm('Забанить пользователя?');">Забанить</button>
+                  {% endif %}
+                </form>
+                <form method="post" style="margin-top:6px;">
                   {% csrf_token %}
                   <input type="hidden" name="action" value="delete">
                   <input type="hidden" name="section" value="users">
@@ -2216,7 +2379,7 @@
               </td>
             </tr>
           {% empty %}
-            <tr><td colspan="5">Пользователей нет</td></tr>
+            <tr><td colspan="6">Пользователей нет</td></tr>
           {% endfor %}
         </tbody>
       </table>

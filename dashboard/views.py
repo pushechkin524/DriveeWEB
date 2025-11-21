@@ -26,6 +26,7 @@ from store.models import (
     Brand,
     Car,
     Favorite,
+    AuditLog,
 )
 
 from .forms import (
@@ -50,10 +51,12 @@ NAV_TABS = [
     ("brands", "Бренды"),
     ("cars", "Автомобили"),
     ("products", "Товары"),
+    ("product_search", "Поиск по товарам"),
     ("orders", "Заказы"),
     ("users", "Пользователи"),
     ("pickups", "Пункты выдачи"),
     ("reports", "Отчёты"),
+    ("audit", "Журнал аудита"),
     ("backup", "Бекап"),
 ]
 ADMIN_SECTIONS = {key for key, _ in NAV_TABS} | {"groups"}
@@ -105,6 +108,8 @@ def _render_panel(request, mode: str):
     report_total = Decimal("0")
     report_period_label = f"{report_initial['start_date'].strftime('%d.%m.%Y')} — {report_initial['end_date'].strftime('%d.%m.%Y')}"
     report_confirmed_only = False
+
+    audit_logs = None
 
     if section == "reports":
         if request.GET:
@@ -161,10 +166,37 @@ def _render_panel(request, mode: str):
     analytics_range_label = dict(analytics_range_options).get(analytics_range, "Неделя")
 
     confirmed_only = request.GET.get("confirmed_only") == "1"
+    order_search = (request.GET.get("order_search") or "").strip()
+    phone_search = (request.GET.get("phone_search") or "").strip()
+    product_sku = (request.GET.get("product_sku") or "").strip()
     orders_qs = OrderRequest.objects.select_related("user", "pickup_point")
+    products_filter = {}
+    if product_sku:
+        products_filter["products__sku__icontains"] = product_sku
+    if order_search.isdigit():
+        orders_qs = orders_qs.filter(id=int(order_search))
+    if phone_search:
+        orders_qs = orders_qs.filter(phone__icontains=phone_search)
+    if products_filter:
+        orders_qs = orders_qs.filter(**products_filter).distinct()
     if confirmed_only:
         orders_qs = orders_qs.filter(status="confirmed")
     orders_list = list(orders_qs.order_by("-created_at")[:50])
+
+    product_search_query = (request.GET.get("product_search") or "").strip()
+    product_search_results = []
+    if section == "product_search":
+        qs = Product.objects.select_related("category", "brand")
+        if product_search_query:
+            qs = qs.filter(sku__icontains=product_search_query)
+        product_search_results = list(qs.order_by("name")[:100])
+
+    audit_logs = None
+    if section == "audit":
+        audit_logs = (
+            AuditLog.objects.select_related("user")
+            .order_by("-date")[:200]
+        )
 
     context = {
         "section": section,
@@ -200,7 +232,7 @@ def _render_panel(request, mode: str):
         "order_form": OrderRequestForm(),
         "orders": orders_list,
         "user_form": UserForm(),
-        "users": User.objects.order_by("-date_joined")[:50],
+        "users": User.objects.select_related("profile").order_by("-date_joined")[:50],
         "pickup_form": PickupPointForm(),
         "pickup_points": PickupPoint.objects.order_by("-created_at"),
         "brands": Brand.objects.order_by("name"),
@@ -227,7 +259,14 @@ def _render_panel(request, mode: str):
         "report_period_label": report_period_label,
         "orders_confirmed_only": confirmed_only,
         "report_confirmed_only": report_confirmed_only,
+        "order_search": order_search,
+        "phone_search": phone_search,
+        "product_sku": product_sku,
+        "product_search_query": product_search_query,
+        "product_search_results": product_search_results,
+        "audit_logs": audit_logs,
     }
+
     return render(request, "dashboard/admin_panel.html", context)
 
 
@@ -241,7 +280,7 @@ def _collect_stats():
 
 
 def _collect_order_status_stats():
-    base = {"new": 0, "confirmed": 0, "declined": 0}
+    base = {"new": 0, "confirmed": 0, "declined": 0, "cancelled": 0}
     totals = (
         OrderRequest.objects.values("status")
         .annotate(total=Count("pk"))
@@ -552,6 +591,25 @@ def _handle_order_post(request):
         instance.status = "confirmed"
         instance.save(update_fields=["status"])
         messages.success(request, "Заказ подтверждён.")
+        # Уведомление пользователю
+        try:
+            send_mail(
+                subject=f"Ваш заказ #{instance.pk} подтверждён",
+                message=(
+                    f"Здравствуйте, {instance.full_name or 'клиент'}!\n\n"
+                    f"Ваш заказ #{instance.pk} подтверждён.\n"
+                    f"Сумма: {instance.total_amount} ₽\n"
+                    f"Статус: подтверждён\n\n"
+                    f"Спасибо, что выбрали нас!"
+                ),
+                from_email=None,
+                recipient_list=[instance.email],
+                fail_silently=True,
+            )
+        except Exception as exc:
+            # не блокируем сохранение
+            import logging
+            logging.getLogger(__name__).exception("order confirm email failed #%s", instance.pk, exc_info=exc)
     elif action == "decline":
         instance.status = "declined"
         instance.save(update_fields=["status"])
@@ -664,6 +722,23 @@ def _handle_user_post(request):
         user.is_staff = role.role == Role.RoleName.ADMIN
         user.save(update_fields=["role", "is_staff"])
         messages.success(request, "Роль пользователя обновлена.")
+    elif action == "ban":
+        user_id = request.POST.get("object_id")
+        user = get_object_or_404(User, pk=user_id)
+        if user.is_superuser:
+            messages.error(request, "Нельзя забанить суперпользователя.")
+        else:
+            user.is_banned = True
+            user.is_active = False
+            user.save(update_fields=["is_banned", "is_active"])
+            messages.success(request, "Пользователь забанен.")
+    elif action == "unban":
+        user_id = request.POST.get("object_id")
+        user = get_object_or_404(User, pk=user_id)
+        user.is_banned = False
+        user.is_active = True
+        user.save(update_fields=["is_banned", "is_active"])
+        messages.success(request, "Пользователь разбанен.")
     else:
         instance = None
         if action == "update":
